@@ -14,6 +14,7 @@ STACK = "stack"
 # stack tuple contains (no_of_elements_popped, no_of_elements_pushed)
 
 OPCODES = {
+    "EMPTY": {GAS: (0, 0), STACK: (0, 0)}, #@wei
     "STOP": {GAS: (0, 0), STACK: (0, 0)},
     "ADD": {GAS: (3, 3), STACK: BIN_OPERATOR_TUPLE},
     "MUL": {GAS: (5, 5), STACK: BIN_OPERATOR_TUPLE},
@@ -184,6 +185,7 @@ OPCODES = {
     "BEGINSUB": {GAS: (2, 2), STACK: (0, 0)},
     "JUMPSUB": {GAS: (10, 10), STACK: (1, 0)},
     "RETURNSUB": {GAS: (5, 5), STACK: (0, 0)},
+
 }  # type: Dict[str, Dict[str, Tuple[int, int]]]
 
 
@@ -223,6 +225,7 @@ def calculate_native_gas(size: int, contract: str):
 
 def get_opcode_gas(opcode: str) -> Tuple[int, int]:
     return OPCODES[opcode][GAS]
+
 
 
 def get_required_stack_elements(opcode: str) -> int:

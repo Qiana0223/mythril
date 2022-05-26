@@ -42,6 +42,7 @@ class Constraints(list):
         constraint = (
             simplify(constraint) if isinstance(constraint, Bool) else Bool(constraint)
         )
+
         super(Constraints, self).append(constraint)
 
     def pop(self, index: int = -1) -> None:

@@ -14,6 +14,8 @@ from mythril.laser.ethereum.strategy.basic import (
     BasicSearchStrategy,
 )
 
+from fdg.fdg_pruner import FDG_prunerBuilder
+from fdg.sse import SSE_prunerBuilder
 from mythril.laser.ethereum.natives import PRECOMPILE_COUNT
 from mythril.laser.ethereum.transaction.symbolic import ACTORS
 
@@ -25,8 +27,7 @@ from mythril.laser.plugin.plugins import (
     CoveragePluginBuilder,
     CallDepthLimitBuilder,
     InstructionProfilerBuilder,
-    FDG_prunerBuilder,
-    SSE_prunerBuilder,
+
 )
 from mythril.laser.ethereum.strategy.extensions.bounded_loops import (
     BoundedLoopsStrategy,
@@ -248,7 +249,7 @@ class SymExecWrapper:
                 instruction = state.get_current_instruction()
 
                 op = instruction["opcode"]
-
+                if op.__eq__('STOP'):break
                 if op in ("CALL", "CALLCODE", "DELEGATECALL", "STATICCALL"):
 
                     stack = state.mstate.stack

@@ -13,7 +13,7 @@ print_ftn_coverage=1
 
 # control the number of symbolic transactions issued by LaserEVM
 global transaction_count
-transaction_count=100
+transaction_count=2
 
 # provide them to FDG_pruner for FDG building
 global solidity_path
@@ -21,7 +21,7 @@ global contract
 
 # max depth of sequence in FDG is set to 5
 global depth_all_ftns_reached
-depth_all_ftns_reached=5
+depth_all_ftns_reached=2
 
 # save the coverage (from coverage_plugin)
 global coverage
@@ -51,4 +51,13 @@ method_identifiers={}
 global sequences
 sequences=''
 
+#
+global ftn_to_idx
+ftn_to_idx={}
+global idx_to_ftn
+idx_to_ftn={}
+global ftn_to_selector
+ftn_to_selector={}
+global selector_to_ftn_full_name
+selector_to_ftn_full_name={}
 

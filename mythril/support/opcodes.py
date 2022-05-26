@@ -2,6 +2,7 @@
 from typing import Dict, Tuple
 
 opcodes = {
+    0xFFF: ("EMPTY", 0, 0, 0), #@wei
     0x00: ("STOP", 0, 0, 0),
     0x01: ("ADD", 2, 1, 3),
     0x02: ("MUL", 2, 1, 5),

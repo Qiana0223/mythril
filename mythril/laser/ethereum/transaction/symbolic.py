@@ -84,10 +84,12 @@ def execute_message_call(laser_evm, callee_address: BitVec) -> None:
 
         next_transaction_id = get_next_transaction_id()
 
+        # external_sender = symbol_factory.BitVecSym(
+        #     "sender_{}".format(next_transaction_id), 256
+        # )
         external_sender = symbol_factory.BitVecSym(
-            "sender_{}".format(next_transaction_id), 256
+            "sender_{}".format(2), 256
         )
-
         transaction = MessageCallTransaction(
             world_state=open_world_state,
             identifier=next_transaction_id,

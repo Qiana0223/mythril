@@ -88,6 +88,7 @@ class Sequence():
             ftn_write = np.where(ftn_write_ary >= 0)[0]
             l_p_dict[sv] = [ftn_i for ftn_i in ftn_write if ftn_i != ftn_idx]
         return l_p_dict
+
     def _get_parent(self, ftn_idx) -> dict:
         """
         get parents 
@@ -257,23 +258,6 @@ class Sequence():
                         collection_seq.append(temp)
         return collection_seq
 
-        #  consider all parents at one time,topological sorting,
-
-    def _get_sequences_by_level_2(self, parents: list, ftn_idx):
-        """
-        consider all parents
-        use shortest sequences to represent parents
-        topological sorting in sequence merging process
-        :return:
-        """
-        collection_seq = []
-        parent_sequences = self._get_parent_sequnces(parents)
-        for p_seq in parent_sequences:
-            sequences = self._get_topological_sequences(p_seq, ftn_idx,False)
-            for seq in sequences:
-                if seq not in collection_seq:
-                    collection_seq.append(seq)
-        return collection_seq
 
 
     # parent subsets, merge sequences
@@ -311,7 +295,7 @@ class Sequence():
         return final_sequences
 
     # parent subset,merge sequences, all permutations of a parent sequence are considered
-    def _get_sequences_by_level_4(self, parent_groups:list, ftn_idx):
+    def _get_sequences_by_level_2(self, parent_groups:list, ftn_idx):
         final_sequences = []
         if len(parent_groups)==0: return []
 
@@ -319,7 +303,7 @@ class Sequence():
         parents=[p for p_list in parent_groups for p in p_list]
         parents=list(set(parents))
         for p_idx in parents:
-            seq_gen=self._get_sequence_1_parent_considered(p_idx,ftn_idx,True)
+            seq_gen=self._get_sequence_1_parent_considered(p_idx,ftn_idx,False)
             for seq in seq_gen:
                 if seq not in final_sequences:
                     final_sequences.append(seq)
@@ -335,11 +319,10 @@ class Sequence():
             for p_subset in parent_subsets:
                 p_sequences=self._get_parent_sequnces(p_subset)
                 for p_seq in p_sequences:
-                    seq_generated= self._merge_sequences_all_permutation(p_seq)
+                    seq_generated= self._get_topological_sequences(p_seq, ftn_idx)
                     for seq in seq_generated:
                         if seq not in final_sequences:
                             final_sequences.append(seq)
-
         return final_sequences
 
 
@@ -390,65 +373,6 @@ class Sequence():
                 p_sequences = self._get_parent_sequnces(p_subset)
                 for seq_list in p_sequences:
                     sequences = self._get_topological_sequences(seq_list, ftn_idx)
-                    for seq in sequences:
-                        if seq not in collection_seq:
-                            collection_seq.append(seq)
-        return collection_seq
-
-    # randomly select parents + the subset that contains all parents,topological sorting
-    def _get_sequences_by_level_6(self, parent_groups: list, ftn_idx):
-        """
-        based on level 5: add a special case, consider the parent subset that includes all parents
-
-        randomly select parents to get a parent subset
-        get a specified number of parent subsets
-        convet each parent sequence subset to one sequence
-
-        topological sorting in sequence merging process
-        :return:
-        """
-        prt_subset_num_limit= fdg.FDG_global.prt_subset_num_limit - 1
-        collection_seq=[]
-
-
-        # select group subsets
-        # add the special subset that includes all parnets
-        parents=[ftn for p_list in parent_groups for ftn in p_list]
-        parents=list(set(parents))
-        parent_subsets=[parents]
-
-        if len(parent_groups)==1:
-            if len(parent_groups[0])>prt_subset_num_limit+1:
-                select=np.random.choice(parent_groups[0], size=prt_subset_num_limit, replace=False)
-                parent_subsets+=[[item] for item in select]
-            else:parent_subsets+=[[item] for item in parent_groups[0]]
-        else:
-            max_range=2**len(parent_groups)
-            if max_range>prt_subset_num_limit+1:
-                select=np.random.choice(list(range(1,max_range)),size=prt_subset_num_limit,replace=False)
-            else:
-                select = list(range(1, max_range))
-            select_binary=[utils.get_binary(len(parent_groups),value) for value in select]
-            for bin_list in select_binary:
-                p_subset=[]
-                for i,bin_ele in enumerate(bin_list):
-                    if bin_ele==1:
-                        # randomly select one parent from the group
-                        p_subset.append(np.random.choice(parent_groups[i],size=1,replace=False)[0])
-                if p_subset not in parent_subsets:
-                    parent_subsets.append(p_subset)
-
-        # for each group subset, randomly select one parent
-        for p_subset in parent_subsets:
-            if len(p_subset)==1:
-                seq_ = self._get_sequence_1_parent_considered(p_subset[0],ftn_idx,False)
-                for seq in seq_:
-                    if seq not in collection_seq:
-                        collection_seq.append(seq)
-            else:
-                p_sequences=self._get_parent_sequnces(p_subset)
-                for seq_list in p_sequences:
-                    sequences=self._get_topological_sequences(seq_list,ftn_idx)
                     for seq in sequences:
                         if seq not in collection_seq:
                             collection_seq.append(seq)
@@ -593,18 +517,14 @@ class Sequence():
             parent_groups = [values for values in l_p_dict.values() if len(values)>0]
 
             all_sequences_ftn = []
-            if fdg.FDG_global.control_level==1:
-                all_sequences_ftn = self._get_sequences_by_level_1(parent_groups, ftn_idx)
-            elif fdg.FDG_global.control_level==2:
+            if fdg.FDG_global.control_level==2:
                 all_sequences_ftn = self._get_sequences_by_level_2(parent_groups, ftn_idx)
+
             elif fdg.FDG_global.control_level == 3:
                 all_sequences_ftn = self._get_sequences_by_level_3(parent_groups, ftn_idx)
-            elif fdg.FDG_global.control_level == 4:
-                all_sequences_ftn = self._get_sequences_by_level_4(parent_groups, ftn_idx)
+
             elif fdg.FDG_global.control_level == 5:
                 all_sequences_ftn = self._get_sequences_by_level_5(parent_groups, ftn_idx)
-            elif fdg.FDG_global.control_level == 6:
-                all_sequences_ftn = self._get_sequences_by_level_6(parent_groups, ftn_idx)
 
             if len(all_sequences_ftn) > 0:
                 self.sequences_generated_cur[ftn_idx] = sorted(all_sequences_ftn, key=len)

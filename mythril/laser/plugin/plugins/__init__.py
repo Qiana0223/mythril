@@ -11,5 +11,3 @@ from mythril.laser.plugin.plugins.dependency_pruner import DependencyPrunerBuild
 from mythril.laser.plugin.plugins.mutation_pruner import MutationPrunerBuilder
 from mythril.laser.plugin.plugins.call_depth_limiter import CallDepthLimitBuilder
 from mythril.laser.plugin.plugins.instruction_profiler import InstructionProfilerBuilder
-from mythril.laser.plugin.plugins.fdg_pruner import FDG_prunerBuilder
-from mythril.laser.plugin.plugins.sse import SSE_prunerBuilder

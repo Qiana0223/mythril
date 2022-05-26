@@ -34,6 +34,7 @@ class MachineStack(list):
         :param element: element to be appended to the list
         :function: appends the element to list if the size is less than STACK_LIMIT, else throws an error
         """
+
         if isinstance(element, int):
             element = symbol_factory.BitVecVal(element, 256)
         if isinstance(element, Bool):

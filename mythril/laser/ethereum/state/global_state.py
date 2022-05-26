@@ -96,8 +96,19 @@ class GlobalState:
         """
         instructions = self.environment.code.instruction_list
         try:
-            return instructions[self.mstate.pc]
+            # print(f'function_name:{self.environment.active_function_name}')
+            # print(f'number of instruction:{len(instructions)}')
+            # print(f'self.mstate.pc:{self.mstate.pc}')
+            # print(f'last two instructions:{instructions[-2:]}')
+            # return instructions[self.mstate.pc]
+            if self.mstate.pc < len(instructions):
+                return instructions[self.mstate.pc]
+            else:
+                print(f'self.mstate.pc:{self.mstate.pc}; len(instructions):{len(instructions)}')
+                return {"address": self.mstate.pc, "opcode": "STOP"}
+
         except KeyError:
+            print(f'self.mstate.pc:{self.mstate.pc}; len(instructions):{len(instructions)}')
             return {"address": self.mstate.pc, "opcode": "STOP"}
 
     @property

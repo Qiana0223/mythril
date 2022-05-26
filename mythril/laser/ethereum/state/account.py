@@ -108,6 +108,7 @@ class Account:
         self.concrete_storage = concrete_storage
         self.nonce = 0
         self.code = code or Disassembly("")
+
         self.address = (
             address
             if isinstance(address, BitVec)

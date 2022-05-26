@@ -132,7 +132,9 @@ class StateTransition(object):
         """
         if self.increment_pc:
             for state in states:
+
                 state.mstate.pc += 1
+
         return states
 
     @staticmethod
@@ -226,6 +228,40 @@ class Instruction:
         for hook in self.post_hook:
             hook(global_state)
 
+    def evaluate_original(self, global_state: GlobalState, post=False) -> List[GlobalState]:
+        """Performs the mutation for this instruction.
+
+        :param global_state:
+        :param post:
+        :return:
+        """
+        # Generalize some ops
+        log.debug("Evaluating %s at %i", self.op_code, global_state.mstate.pc)
+
+        op = self.op_code.lower()
+        if self.op_code.startswith("PUSH"):
+            op = "push"
+        elif self.op_code.startswith("DUP"):
+            op = "dup"
+        elif self.op_code.startswith("SWAP"):
+            op = "swap"
+        elif self.op_code.startswith("LOG"):
+            op = "log"
+
+        instruction_mutator = (
+            getattr(self, op + "_", None)
+            if not post
+            else getattr(self, op + "_" + "post", None)
+        )
+        if instruction_mutator is None:
+            raise NotImplementedError
+
+        self._execute_pre_hooks(global_state)
+        result = instruction_mutator(global_state)
+        self._execute_post_hooks(global_state)
+
+        return result
+
     def evaluate(self, global_state: GlobalState, post=False) -> List[GlobalState]:
         """Performs the mutation for this instruction.
 
@@ -245,6 +281,8 @@ class Instruction:
             op = "swap"
         elif self.op_code.startswith("LOG"):
             op = "log"
+        elif self.op_code.startswith("EMPTY"):#@wei: to handle opcode "-"
+            op = "empty"
 
         instruction_mutator = (
             getattr(self, op + "_", None)
@@ -299,6 +337,17 @@ class Instruction:
         """
         value = int(global_state.get_current_instruction()["opcode"][3:], 10)
         global_state.mstate.stack.append(global_state.mstate.stack[-value])
+        return [global_state]
+
+    @StateTransition()
+    def empty_(self, global_state: GlobalState) -> List[GlobalState]:
+        """
+
+        :param global_state:
+        :return:
+        """
+        # value = int(global_state.get_current_instruction()["opcode"][3:], 10)
+        # global_state.mstate.stack.append(global_state.mstate.stack[-value])
         return [global_state]
 
     @StateTransition()
@@ -1553,6 +1602,7 @@ class Instruction:
         try:
             jump_addr = util.get_concrete_int(op0)
         except TypeError:
+
             log.debug("Skipping JUMPI to invalid destination.")
             global_state.mstate.pc += 1
             global_state.mstate.min_gas_used += min_gas
@@ -1641,6 +1691,7 @@ class Instruction:
                 "Encountered invalid JUMPSUB location :{}".format(instr["address"])
             )
         global_state.mstate.subroutine_stack.append(global_state.mstate.pc + 1)
+
         global_state.mstate.pc = location
         return [global_state]
 
@@ -1649,6 +1700,7 @@ class Instruction:
         """
         Returns control to the caller of the subroutine
         """
+
         global_state.mstate.pc = global_state.mstate.subroutine_stack.pop()
         return [global_state]
 

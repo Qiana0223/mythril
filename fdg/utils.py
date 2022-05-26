@@ -67,7 +67,6 @@ def assign_pc_special_ftn_dup1(current_pc: int, pc_list:list,executed_pc:list,pc
 
 def get_combination(list_for_comb,comb_length:int):
     """
-
     :param list_for_comb: [[1,4], [2,6],[5]]
     :param comb_length: 2 (two elements in a combination)
     :return: [(1, 2), (1, 6), (4, 2), (4, 6), (1, 5), (4, 5), (2, 5), (6, 5)]
@@ -85,6 +84,13 @@ def get_combination(list_for_comb,comb_length:int):
 
     return com_re
 
+def get_combination_for_a_list(list_for_comb,comb_length:int):
+    re=[]
+    for item in it.combinations(list_for_comb, comb_length):
+        re.append(item)
+    return re
+
+
 def get_binary(length:int,number:int):
     bin_list=[]
     bin_str=bin(number)
@@ -101,5 +107,8 @@ if __name__ == '__main__':
     print(get_binary(7,16))
     print(get_binary(6,16))
     print(np.random.choice(range(10), size=2, replace=False))
+    print(get_combination_for_a_list([1,2,3],2))
+    print(get_combination([["1","2"], ["b"]], 2))
+
 
 

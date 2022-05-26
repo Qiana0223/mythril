@@ -124,6 +124,7 @@ class KeccakFunctionManager:
         :param func_input: input of the hash
         :return: condition
         """
+
         length = func_input.size()
         func, inv = self.get_function(length)
         try:

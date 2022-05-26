@@ -1,4 +1,5 @@
 import fdg
+from mythril.laser.ethereum.state.world_state import WorldState
 from mythril.laser.ethereum.svm import LaserEVM
 from mythril.laser.plugin.interface import LaserPlugin
 from mythril.laser.plugin.builder import PluginBuilder
@@ -19,6 +20,22 @@ import logging
 
 
 log = logging.getLogger(__name__)
+
+def get_ftn_seq_annotation_from_ws(state:WorldState) -> list:
+    """ Returns the global state annotation
+
+    :param state: A world state object
+    """
+
+    annotations = cast(
+        List[WSDependencyAnnotation],
+        list(state.get_annotations(WSDependencyAnnotation)),
+    )
+    ftn_seq = annotations[0].annotations_stack[0].ftn_seq
+
+
+
+    return ftn_seq
 
 
 def get_dependency_annotation(state: GlobalState) -> DependencyAnnotation:

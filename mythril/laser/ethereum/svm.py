@@ -178,6 +178,8 @@ class LaserEVM:
             created_account = execute_contract_creation(
                 self, creation_code, contract_name, world_state=world_state
             )
+            fdg.fdg_pruner.contract_address = created_account.address
+            fdg.sse.contract_address = created_account.address
             log.info(
                 "Finished contract creation, found {} open states".format(
                     len(self.open_states)
@@ -190,7 +192,10 @@ class LaserEVM:
                     "Increase the resources for creation execution (--max-depth or --create-timeout)"
                 )
 
-            self._execute_transactions(created_account.address)
+            if self.fdg_flag or self.sse_flag:
+                self._execute_transactions_fdg(created_account.address)
+            else:
+                self._execute_transactions(created_account.address)
 
 
         log.info("Finished symbolic execution")
@@ -216,74 +221,73 @@ class LaserEVM:
         :return:
         """
         self.time = datetime.now()
-
-        if self.fdg_flag or self.sse_flag:
-            i = 0
-            while i <fdg.FDG_global.transaction_count:  #@wei rewrite loop
-
-                if self.sse_flag: # check state feasibility
-                    if len(self.open_states) == 0:
-                        # break
-                        print(f'iteration {i}, no open states are generated! ')
-                    else:
-                        print(f'iteration {i}, there is/are open state(s)!')
-                    old_states_count = len(self.open_states)
-                    self.open_states = [
-                        state for state in self.open_states if state.constraints.is_possible
-                    ]
-                    prune_count = old_states_count - len(self.open_states)
-                    if prune_count:
-                        log.info("Pruned {} unreachable states".format(prune_count))
-
-                log.info(
-                    "Starting message call transaction, iteration: {}, {} initial states".format(
-                        i, len(self.open_states)
-                    )
+        for i in range(self.transaction_count):
+            if len(self.open_states) == 0:
+                break
+            old_states_count = len(self.open_states)
+            self.open_states = [
+                state for state in self.open_states if state.constraints.is_possible
+            ]
+            prune_count = old_states_count - len(self.open_states)
+            if prune_count:
+                log.info("Pruned {} unreachable states".format(prune_count))
+            log.info(
+                "Starting message call transaction, iteration: {}, {} initial states".format(
+                    i, len(self.open_states)
                 )
+            )
 
-                for hook in self._start_sym_trans_hooks:
-                    hook()
-                for hook in self._start_sym_trans_hooks_laserEVM:
-                    hook(self)
+            for hook in self._start_sym_trans_hooks:
+                hook()
+            for hook in self._start_sym_trans_hooks_laserEVM:
+                hook(self)
 
-                execute_message_call(self, address)
+            execute_message_call(self, address)
 
-                for hook in self._stop_sym_trans_hooks:
-                    hook()
+            for hook in self._stop_sym_trans_hooks_laserEVM:
+                hook(self)
 
-                for hook in self._stop_sym_trans_hooks_laserEVM:
-                    hook(self)
-                i+=1
-        else:
-            for i in range(self.transaction_count):
-                if len(self.open_states) == 0:
-                    break
-                old_states_count = len(self.open_states)
-                self.open_states = [
-                    state for state in self.open_states if state.constraints.is_possible
-                ]
-                prune_count = old_states_count - len(self.open_states)
-                if prune_count:
-                    log.info("Pruned {} unreachable states".format(prune_count))
-                log.info(
-                    "Starting message call transaction, iteration: {}, {} initial states".format(
-                        i, len(self.open_states)
-                    )
+            for hook in self._stop_sym_trans_hooks:
+                hook()
+
+    def _execute_transactions_fdg(self, address):
+        """This function executes multiple transactions on the address
+
+        :param address: Address of the contract
+        :return:
+        """
+        self.time = datetime.now()
+        i = 0
+        while i < fdg.FDG_global.transaction_count:  # @wei rewrite loop
+            if len(self.open_states) == 0:
+                break
+            old_states_count = len(self.open_states)
+            self.open_states = [
+                state for state in self.open_states if state.constraints.is_possible
+            ]
+            prune_count = old_states_count - len(self.open_states)
+            if prune_count:
+                log.info("Pruned {} unreachable states".format(prune_count))
+
+            log.info(
+                "Starting message call transaction, iteration: {}, {} initial states".format(
+                    i, len(self.open_states)
                 )
+            )
 
-                for hook in self._start_sym_trans_hooks:
-                    hook()
-                for hook in self._start_sym_trans_hooks_laserEVM:
-                    hook(self)
+            for hook in self._start_sym_trans_hooks:
+                hook()
+            for hook in self._start_sym_trans_hooks_laserEVM:
+                hook(self)
 
-                execute_message_call(self, address)
+            execute_message_call(self, address)
 
-                for hook in self._stop_sym_trans_hooks_laserEVM:
-                    hook(self)
+            for hook in self._stop_sym_trans_hooks:
+                hook()
 
-                for hook in self._stop_sym_trans_hooks:
-                    hook()
-
+            for hook in self._stop_sym_trans_hooks_laserEVM:
+                hook(self)
+            i += 1
 
 
     def _check_create_termination(self) -> bool:
@@ -383,6 +387,15 @@ class LaserEVM:
         instructions = global_state.environment.code.instruction_list
         try:
             op_code = instructions[global_state.mstate.pc]["opcode"]
+            # #@wei ignore opcode "EMPTY"
+            # if str(op_code).__eq__("EMPTY"):
+            #     # #----------
+            #     # new_state=global_state
+            #     # new_state.mstate.pc+=1
+            #     # return [new_state], op_code  # return the same state
+            #
+            #     # ----------
+            #     return [global_state], op_code  # return the same state
         except IndexError:
             self._add_world_state(global_state)
             return [], None
@@ -561,7 +574,11 @@ class LaserEVM:
                 self._new_node_state(state, JumpType.RETURN)
 
         for state in new_states:
-            state.node.states.append(state)
+            # @wei
+            if state.mstate.pc >= len(state.environment.code.instruction_list):
+                print(f'self.mstate.pc:{state.mstate.pc}; len(instructions):{len(state.environment.code.instruction_list)}')
+            else:
+                state.node.states.append(state)
 
     def _new_node_state(
         self, state: GlobalState, edge_type=JumpType.UNCONDITIONAL, condition=None
@@ -578,12 +595,15 @@ class LaserEVM:
             ]
         except IndexError:
             return
+
         new_node = Node(state.environment.active_account.contract_name)
         old_node = state.node
         state.node = new_node
         new_node.constraints = state.world_state.constraints
         if self.requires_statespace:
+
             self.nodes[new_node.uid] = new_node
+
             self.edges.append(
                 Edge(
                     old_node.uid, new_node.uid, edge_type=edge_type, condition=condition
