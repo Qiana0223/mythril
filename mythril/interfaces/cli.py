@@ -449,7 +449,7 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
         "-snl",
         "--sequence-number-limit",
         type=int,
-        default=1,
+        default=5,
         help="limit the number of seqeunces generated for each parent sequence list.",
     )
     #@wei

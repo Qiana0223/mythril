@@ -84,6 +84,7 @@ class IntegerArithmetics(DetectionModule):
         "CALL",
     ]
 
+
     def __init__(self) -> None:
         """
         Cache satisfiability of overflow constraints

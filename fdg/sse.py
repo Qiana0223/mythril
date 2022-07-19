@@ -4,17 +4,14 @@ from copy import copy, deepcopy
 
 import sha3
 
-from fdg import utils
-from fdg.FDG import FDG
-from fdg.funtion_info import Function_info
-from fdg.sequence import Sequence
+
 from mythril.laser.ethereum.state.world_state import WorldState
 from mythril.laser.ethereum.svm import LaserEVM
 from mythril.laser.plugin.interface import LaserPlugin
 from mythril.laser.plugin.builder import PluginBuilder
-from mythril.laser.plugin.plugins.coverage import coverage_plugin
+
 from mythril.laser.plugin.plugins.dependency_pruner import get_dependency_annotation
-from mythril.laser.plugin.signals import PluginSkipState
+
 from mythril.laser.ethereum.state.global_state import GlobalState
 from mythril.laser.ethereum.transaction.transaction_models import (
     ContractCreationTransaction,
@@ -95,17 +92,17 @@ class sse(LaserPlugin):
                 # #[[setMinter(),mint(),setDestroyer(),burn()]]
                 # self.sequences = [['0xfca3b5aa', '0x40c10f19','0x6a7301b8','0x42966c68']]
 
-                # HoloToken.sol
-                # [[setDestroyer(),setMinter(),mint(),burn()]]
-                self.sequences = [['0x6a7301b8', '0xfca3b5aa', '0x40c10f19', '0x42966c68']]
+                # # HoloToken.sol
+                # # [[setDestroyer(),setMinter(),mint(),burn()]]
+                # self.sequences = [['0x6a7301b8', '0xfca3b5aa', '0x40c10f19', '0x42966c68']]
 
                 # # HoloToken.sol
                 # # [[setMinter(),mint(),burn()]]
                 # self.sequences = [['0xfca3b5aa', '0x40c10f19', '0x42966c68']]
 
-                # # HoloToken.sol
-                # # [[setDestroyer(),burn()]]
-                # self.sequences = [['0x6a7301b8',  '0x42966c68']]
+                # HoloToken.sol
+                # [[setDestroyer(),burn()]]
+                self.sequences = [['0x6a7301b8', '0xfca3b5aa', '0x40c10f19', '0x42966c68'],['0x6a7301b8',  '0x42966c68']]
 
                 # # HoloToken.sol
                 # #[['setMinter(),mint(),mint()]]
@@ -136,13 +133,13 @@ class sse(LaserPlugin):
                 # # [['safe_add', 'add']]
                 # self.sequences =  [['0x3e127e76', '0x1003e2d2']]
 
-                #PDC_7.sol
-                #[['transfer_1()']]
-                self.sequences=[['0xf9cbcc50']]
-
-                # PDC_7.sol
-                # [['transfer_2()']]
-                self.sequences = [['0x76afdf24']]
+                # #PDC_7.sol
+                # #[['transfer_1()']]
+                # self.sequences=[['0xf9cbcc50']]
+                #
+                # # PDC_7.sol
+                # # [['transfer_2()']]
+                # self.sequences = [['0x76afdf24']]
 
 
 

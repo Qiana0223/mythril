@@ -319,7 +319,10 @@ class DependencyPruner(LaserPlugin):
             if annotation.has_call:
                 self.update_calls(annotation.path)
             #@wei add function name in annotation
-            annotation.ftn_seq.append(state.environment.active_function_name)
+            ftn_name=state.environment.active_function_name
+            if ftn_name.__eq__("fallback"):
+                ftn_name="fallback()"
+            annotation.ftn_seq.append(ftn_name)
 
         def _check_basic_block(address: int, annotation: DependencyAnnotation):
             """This method is where the actual pruning happens.
@@ -333,7 +336,7 @@ class DependencyPruner(LaserPlugin):
                 return
 
             #@wei for sequence execution, ignore dependency pruner(critical)
-            if self.iteration>fdg.FDG_global.depth_all_ftns_reached+1:
+            if self.iteration>fdg.FDG_global.fdg_execution_depth+1:
                 return
 
             # Don't skip newly discovered blocks

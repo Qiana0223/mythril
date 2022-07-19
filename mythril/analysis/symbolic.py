@@ -137,6 +137,8 @@ class SymExecWrapper:
             self.laser.extend_strategy(BoundedLoopsStrategy, loop_bound)
 
         plugin_loader = LaserPluginLoader()
+        # instructionCoveragePluginBuilder=CoveragePluginBuilder()
+        # plugin_loader.load(instructionCoveragePluginBuilder)
         plugin_loader.load(CoveragePluginBuilder())
         plugin_loader.load(MutationPrunerBuilder())
         plugin_loader.load(CallDepthLimitBuilder())

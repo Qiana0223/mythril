@@ -85,7 +85,6 @@ class ftn_annotationBuilder(PluginBuilder):
     def __call__(self, *args, **kwargs):
         return ftn_annotation()
 
-
 class ftn_annotation(LaserPlugin):
     """ """
 
@@ -106,7 +105,6 @@ class ftn_annotation(LaserPlugin):
 
         @symbolic_vm.laser_hook("start_sym_exec")
         def start_sym_exec_hook():
-
            pass
 
         @symbolic_vm.laser_hook("stop_sym_exec")
@@ -114,19 +112,9 @@ class ftn_annotation(LaserPlugin):
             print(f' end of symbolic execution')
             pass
 
-
-
-
         @symbolic_vm.laser_hook("start_sym_trans")
         def start_sym_trans_hook():
-
             self._iteration_+=1
-
-
-
-
-
-
 
 
         @symbolic_vm.pre_hook("STOP")

@@ -1,88 +1,70 @@
 
 # support FDG-guided execution and sequence execution
-
+from fdg.FunctionCoverage import FunctionCoverage
+from fdg.deepFunctionSelection import DeepFunctionSelection
+from fdg.instructionModification import InstructionModification
+from fdg.sequenceAndState import SequenceAndState
+from fdg.sequenceExecutionControl import SequenceExecutionControl
 from copy import copy, deepcopy
-from typing import cast, List
-from fdg.node import Node
-from fdg import utils
+
 from fdg.FDG import FDG
-from fdg.funtion_info import Function_info
-from fdg.contract_data import ContractData
-from fdg.sequence import Sequence
-from mythril.laser.ethereum.state.world_state import WorldState
+from fdg.contractInfo import ContractInfo
+from fdg.sequenceGeneration import SequenceGeneration
 from mythril.laser.ethereum.svm import LaserEVM
 from mythril.laser.plugin.interface import LaserPlugin
 from mythril.laser.plugin.builder import PluginBuilder
-from mythril.laser.plugin.plugins.coverage import coverage_plugin
+from mythril.laser.plugin.plugins.coverage import coverage_plugin, InstructionCoveragePlugin
 from mythril.laser.plugin.plugins.dependency_pruner import get_dependency_annotation, \
      get_ftn_seq_annotation_from_ws
-from mythril.laser.plugin.plugins.plugin_annotations import WSDependencyAnnotation, DependencyAnnotation
-from mythril.laser.plugin.signals import PluginSkipState
+
 from mythril.laser.ethereum.state.global_state import GlobalState
 from mythril.laser.ethereum.transaction.transaction_models import (
     ContractCreationTransaction,
 )
-from fdg.functionSequence import FunctionSequence
 
 import logging
 import fdg.FDG_global
-import time
-import numpy as np
+
 
 log = logging.getLogger(__name__)
+
+
 global contract_ddress
 contract_address=0x0
-max_number_functions=100
+
+
 class FDG_prunerBuilder(PluginBuilder):
     name = "fdg-pruner"
-
     def __call__(self, *args, **kwargs):
-        return FDG_pruner()
+        return FDG_pruner(**kwargs)
 
 
 class FDG_pruner(LaserPlugin):
     """ """
-
-    def __init__(self):
+    def __init__(self,instructionCoveragePlugin:InstructionCoveragePlugin):
         """Creates FDG pruner"""
         self._reset()
+        self.functionCoverage=FunctionCoverage(instructionCoveragePlugin,
+                                               fdg.FDG_global.ftns_instr_indices,
+                                               fdg.FDG_global.target_bytecode)
 
     def _reset(self):
-
         self._iteration_ = 0
 
-        self.solidity = '' # the file path to the solidity file
-        self.contract = '' # the contract name to be executed
-        self.contract_data=None # save data resulted from Slither
+        self.contract_info=None # save data resulted from Slither
+        self.FDG=None
+        self.sequenceAndState=None
+        self.instructionModification=None
+        self.deepFtnSelection=None
+        self.sequenceGeneration=None
+        self.seqExeControl = None
 
-        # coverage related
-        self.cov_ftn_instructions_indices = {} # pure names as the keys (limited by the results from compiler)
-        self.cov_ftn_identifiers = {} # full names as the keys, directly extracted
-        self.cov_ftn_name_to_full_name={} # map pure name to full name
-        self.cov_function_coverage={} # use pure or full names as the keys
-        self.cov_function_instruction_indices={} # full names as keys
-        self.cov_other_instruction_indices={} # pure names as keys ( they are not callable functions)
-
-        # save data during in FDG-guided execution phase
-        self.OS_states = {}  # save in-between transaction states
-
-        # save executed sequences
-        self.save_no_state_change_sequences = {}
-        self.save_state_change_sequences = {}
+        # tempararily save sequences for the current iteration
         self.save_cur_iteration_all_sequences = []  # all sequences in the current iteration
         self.save_cur_iteration_state_change_sequences = []  # all valid sequences in the current iteration
 
-
-        # related to specifying a set of functions to be executed
-        self.fct_hash_2_pc_in_dispatcher={}
-        self.instr_list_original=[]
-        self.instructions_dict={}
-
-        # phase 2: sequence generation and sequence execution
-        self.seq_generated_sequences=[]
-        self.seq_cur_sequence_index = 0
-        self.seq_cur_executing_sequence = []
-        self.seq_cur_function_index=0
+        self.flag_phase2_start = False
+        self.flag_phase2_termination=False
 
 
     def initialize(self, symbolic_vm: LaserEVM) -> None:
@@ -93,58 +75,41 @@ class FDG_pruner(LaserPlugin):
 
         @symbolic_vm.laser_hook("start_sym_exec")
         def start_sym_exec_hook():
-            self.solidity = fdg.FDG_global.solidity_path
-            self.contract = fdg.FDG_global.contract
-
             # get contract data
-            self.contract_data=ContractData(self.solidity,self.contract)
-            self.contract_data.get_state_variables_info()
-            self.contract_data.get_user_callable_functions_info()
+            self.contract_info=ContractInfo(fdg.FDG_global.solidity_path, fdg.FDG_global.contract)
+            self.functionCoverage.set_index_to_ftn_pure_name(self.contract_info.ftn_to_idx)
 
-            #
-            fdg.FDG_global.ftn_to_idx=self.contract_data.ftn_to_idx
-            fdg.FDG_global.idx_to_ftn=self.contract_data.idx_to_ftn
-            for key in self.contract_data.functions_info.keys():
-                fdg.FDG_global.ftn_to_selector[key]=self.contract_data.functions_info[key]['selector']
-                fdg.FDG_global.selector_to_ftn_full_name[self.contract_data.functions_info[key]['selector']]=key
+            # create an FDG
+            self.FDG=FDG(self.contract_info, level_phase1=0)
 
+            # for saving the generated states and executed sequences
+            self.sequenceAndState=SequenceAndState(self.contract_info,self.functionCoverage)
 
+            self.instructionModification=InstructionModification(self.contract_info)
 
-            # get each function's instructions' indices in the whole instruction list
-            self.cov_ftn_instructions_indices = fdg.FDG_global.ftns_instr_indices
+            self.deepFtnSelection=DeepFunctionSelection(self.FDG,self.sequenceAndState)
 
-            for ftn_full_name, identifier in fdg.FDG_global.method_identifiers.items():
-                # remve '(...)' from function signature,
-                # use pure name as key because self.ftn_instructions_indices uses only pure name as key
-                pure_name=str(ftn_full_name).split('(')[0]
-                self.cov_ftn_name_to_full_name[pure_name]=ftn_full_name
+            self.sequenceGeneration=SequenceGeneration(self.FDG,self.sequenceAndState)
 
-            for ftn, indices in fdg.FDG_global.ftns_instr_indices.items():
-                if ftn in self.cov_ftn_name_to_full_name.keys():
-                    self.cov_function_instruction_indices[self.cov_ftn_name_to_full_name[ftn]]=indices
-                else:
-                    print(f'{ftn} does not have full name')
-                    self.cov_other_instruction_indices[ftn] = indices
-
-            # initialize coverage for each function except constructor
-            for ftn, ftn_instr_list in fdg.FDG_global.ftns_instr_indices.items():
-                # if ftn=='constructor' or ftn=='fallback':continue
-                if ftn == 'constructor': continue
-                self.cov_function_coverage[self.cov_ftn_name_to_full_name[ftn]]=[0 / len(ftn_instr_list), ftn_instr_list]
+            self.seqExeControl = SequenceExecutionControl(self.sequenceAndState)
 
         @symbolic_vm.laser_hook("stop_sym_exec")
         def stop_sym_exec_hook():
+            self.functionCoverage.compute_coverage()
             if fdg.FDG_global.print_ftn_coverage==1:
                 print(f'End of symbolic execution')
-                for ftn, ftn_cov in self.cov_function_coverage.items():
-                    print("{:.2f}% coverage for {}".format(ftn_cov[0], ftn))
+                for ftn, ftn_cov in self.functionCoverage.get_function_coverage().items():
+                    print("{:.2f}% coverage for {}".format(ftn_cov, ftn))
+            deep_functions_1st_time=self.sequenceAndState.get_deep_functions_1st_time()
+            if len(deep_functions_1st_time)>0:
+                deep_function_in_the_end=self.sequenceAndState.compute_deep_functions()
+                print(f'deep functions: {len(deep_functions_1st_time)-len(deep_function_in_the_end)} out of {len(deep_functions_1st_time)} is(are) meaningfully executed.')
 
+                print(f'all deep function(s): {deep_functions_1st_time}')
+                print(f'left deep function(s): {deep_function_in_the_end}')
+                for idx in range(2, len(self.contract_info.function_info.keys())):
+                    print(f'{idx}: {self.contract_info.get_name_from_index(idx)}')
 
-
-        @symbolic_vm.laser_hook("stop_sym_trans")
-        def execute_stop_sym_trans_hook():
-            # ----------------------------
-            pass
 
         @symbolic_vm.laser_hook("start_sym_trans_laserEVM")
         def start_sym_trans_hook_laserEVM(laserEVM: LaserEVM):
@@ -155,123 +120,141 @@ class FDG_pruner(LaserPlugin):
             :param laserEVM: instance of LaserEVM
             :return:
             """
+
+
             self._iteration_ += 1
             print(f'start: self._iteration_={self._iteration_}')
-            # define variables to save states and function pairs
-            if self._iteration_ <= 2:
-                if self._iteration_ not in self.OS_states.keys():
-                    self.OS_states[self._iteration_] = {}
 
             if self._iteration_==1:
-                # collect the pc for each function hash in dispatcher
-                self._collect_pc_for_fct_hashes_in_dispatcher(laserEVM)
-                self.save_cur_iteration_all_sequences=[[self.contract_data.idx_to_ftn[idx]] for idx in range(1, len(self.contract_data.idx_to_ftn.keys()))]
+                self.instructionModification.feed_instructions(laserEVM,contract_address)
+                self.save_cur_iteration_all_sequences=[[ftn_idx] for ftn_idx in self.contract_info.function_info.keys()-[0] ]
                 self.save_cur_iteration_state_change_sequences=[]
 
-            # modify instructions
-            if self._iteration_ == 2:
-                self.save_cur_iteration_all_sequences=[]
-                new_states = []
-                # modify the instruction list for each open states based on FDG
-                for state in laserEVM.open_states:
-                    #if not state.constraints.is_possible: continue
-
+            # specify the functions to be executed on each open states(world states)
+            if self._iteration_ <=fdg.FDG_global.fdg_execution_depth and self._iteration_>1:
+                modified_states=[]
+                for idx,state in enumerate(laserEVM.open_states):
                     ftn_seq=get_ftn_seq_annotation_from_ws(state)
+                    ftn_idx_seq=[]
+                    for ftn_name in ftn_seq:
+                        if ftn_name in self.contract_info.ftn_to_idx.keys():
+                            ftn_idx_seq.append(self.contract_info.get_index_from_name(ftn_name))
+                        else:
+                            ftn_idx_seq.append(ftn_name) # functions of state variables (future work)
 
-                    ftn_name = state.node.function_name
+                    # get children nodes
+                    children=[]
+                    if not isinstance(ftn_idx_seq[-1],int): #means functions of state variables #to-do-list
+                        sv=str(ftn_idx_seq[-1]).split("(")[0]
+                        children=self.FDG.get_ftn_read_SV(sv,0) # in phase 1, so, the level is 0 by default
+                    else:
+                        children = self.FDG.get_children(ftn_idx_seq[-1])
+                    if len(children)>0:
+                        children_selectors=[self.contract_info.get_selector_from_index(idx) for idx in children]
+                        # save sequences to be executed
+                        for idx in children:
+                            self.save_cur_iteration_all_sequences.append(ftn_idx_seq + [idx])
 
-                    children_nodes = self.contract_data.get_children(ftn_name,1)
-                    children_selectors=[node.selector for node in children_nodes]
-                    for node in children_nodes:
-                        self.save_cur_iteration_all_sequences.append(ftn_seq + [node.selector])
+                        # modify function dispatcher so that only specified functions are executed
+                        modified_state=deepcopy(state)
+                        self.instructionModification.modify_instructions_on_one_state(modified_state, children_selectors)
+                        modified_states.append(modified_state)
 
-                    # modify the state
-                    if len(children_selectors) > 0:
-                        modify_state = deepcopy(state)
-                        self._modify_dispatcher_in_instruction_list(modify_state, children_selectors)
-                        new_states.append(deepcopy(modify_state))
-
-                # update the open states
-                laserEVM.open_states = new_states
-                self.save_cur_iteration_state_change_sequences=[]
-
-
+                # update the open states so that the states having no children nodes are removed
+                laserEVM.open_states=modified_states
 
         @symbolic_vm.laser_hook("stop_sym_trans_laserEVM")
         def stop_sym_trans_hook_laserEVM(laserEVM: LaserEVM):
             """
             - save states
-            - only need to states from depth 1 to fdg.FDG_global.depth_all_ftns_reached+1
             - some saved states are used as initial states in sequence execution
 
             :param laserEVM:
             :return:
             """
-            print(f'stop: self._iteration_={self._iteration_}')
+            print(f'end: self._iteration_={self._iteration_}')
             if self._iteration_ == 0: return
 
-            # save states
-            self._save_states(laserEVM,False)
+            # save states and their corresponding sequences
+            old_states_count = len(laserEVM.open_states)
+            self.open_states = [
+                state for state in laserEVM.open_states if state.constraints.is_possible
+            ]
+            prune_count = old_states_count - len(laserEVM.open_states)
+            if prune_count:log.info("Pruned {} unreachable states".format(prune_count))
+
+            for state in laserEVM.open_states:
+                ftn_seq=self.sequenceAndState.save_state_and_its_sequence(state)
+                self.save_cur_iteration_state_change_sequences.append(ftn_seq)
+
+
+            # save non-state-changing sequences
+            self.sequenceAndState.save_sequences_not_changing_states(self.save_cur_iteration_all_sequences,
+                                                         self.save_cur_iteration_state_change_sequences)
+
+            # empty saved sequences
+            print(f'cur_all sequence(s):{self.save_cur_iteration_all_sequences}')
+            self._print_sequences(self.save_cur_iteration_all_sequences)
+            print(f'cur_state_change sequence(s):{self.save_cur_iteration_state_change_sequences}')
+            self._print_sequences(self.save_cur_iteration_state_change_sequences)
+            self.save_cur_iteration_all_sequences = []
+            self.save_cur_iteration_state_change_sequences=[]
 
             # check the code coverage for each function
-            self._update_coverage()
-
-            print(f'cur_all:{self.save_cur_iteration_all_sequences}')
-            print(f'cur_state_change:{self.save_cur_iteration_state_change_sequences}')
-
-            # save executed sequences
-            for item in self.save_cur_iteration_state_change_sequences:
-                assert len(item)>0
-                if item[-1] not in self.save_state_change_sequences.keys():
-                    self.save_state_change_sequences[item[-1]]=[item]
-                else:
-                    if item not in self.save_state_change_sequences[item[-1]]:
-                        self.save_state_change_sequences[item[-1]]+=[item]
-            for item in self.save_cur_iteration_all_sequences:
-                if item not in self.save_cur_iteration_state_change_sequences:
-                    if item[-1] not in self.save_no_state_change_sequences.keys():
-                        self.save_no_state_change_sequences[item[-1]] = [item]
-                    else:
-                        if item not in self.save_no_state_change_sequences[item[-1]]:
-                            self.save_no_state_change_sequences[item[-1]] += [item]
+            if self._iteration_==fdg.FDG_global.fdg_execution_depth:
+                self.functionCoverage.compute_coverage()
+                self.functionCoverage.compute_deep_functions()
 
 
+            if self.flag_phase2_start:
+                # if self.seqExeControl.function_index==len(self.seqExeControl.sequence_cur_in_execution)-1:
+                #     self.functionCoverage.compute_coverage()
+                self.seqExeControl.end_exe_a_function()
+
+            # signal to start sequence execution
+            if self._iteration_==fdg.FDG_global.fdg_execution_depth:
+                self.flag_phase2_start=True
+                laserEVM.open_states=[]
+
+            # sequence execution
+            if self.flag_phase2_start:
+                # generate the sequences to be executed
+                while self.seqExeControl.flag_to_generate_sequences:
+                    deep_functions =self.sequenceAndState.compute_deep_functions()
+                    if len(deep_functions)==0:
+                        self.flag_phase2_termination=True
+                        break
+                    # deep_function_selected =self.deepFtnSelection.select_a_deep_function_simple(deep_functions)
+                    deep_function_selected = self.deepFtnSelection.select_a_deep_function(deep_functions)
+
+                    if deep_function_selected==-1: # the deep function has no parent; thus no sequence can be generated
+                        self.flag_phase2_termination = True
+                        break
+                    # generate sequences for the selected deep function
+                    sequences =self.sequenceGeneration.generate_sequences(deep_function_selected)
+                    if len(sequences) > 0:
+                        self.seqExeControl.feed_generated_sequences(sequences,deep_function_selected)
 
 
+                # terminate sequence execution
+                if self.flag_phase2_termination:
+                    # all deep functions are selected once
+                    fdg.FDG_global.transaction_count = self._iteration_
+                    laserEVM.open_states = []
 
+                if not self.seqExeControl.flag_to_generate_sequences:
+                    key, ftn_idx_to_be_executed = self.seqExeControl.start_exe_a_function()
+                    if key is not None:
+                        laserEVM.open_states = deepcopy(self.sequenceAndState.get_state(key))
+                    # execute the function
+                    if ftn_idx_to_be_executed is not None:
+                        # save the sequence that will be executed in this iteration
+                        self.save_cur_iteration_all_sequences.append(self.seqExeControl.get_current_sequence_in_execution())
 
-
-
-
-        @symbolic_vm.pre_hook("RETURN")
-        def return_hook(state: GlobalState):
-            seq = get_dependency_annotation(state).ftn_seq
-            print(f'return: iteration:{self._iteration_}; ftn:{state.node.function_name}; seq:{seq}')
-
-        @symbolic_vm.pre_hook("STOP")
-        def stop_hook(state: GlobalState):
-            seq = get_dependency_annotation(state).ftn_seq
-            print(f'stop: iteration:{self._iteration_}; ftn:{state.node.function_name}; seq:{seq}')
-
-        # @symbolic_vm.pre_hook("REVERT")
-        # def revert_hook(state: GlobalState):
-        #     seq = get_dependency_annotation(state).ftn_seq
-        #     print(f'revert: iteration:{self._iteration_}; ftn:{state.node.function_name}; seq:{seq}')
-
-
-        def _transaction_end(state: GlobalState) -> None:
-            """
-            save function sequences
-            :param state:
-            """
-            # get valid sequences from states
-            pass
-
-
-
-
-
-
+                        # modify the instructions of the states so that only the specified function is executed
+                        # as one sequence is executed at one time, on all open states, the same function is executed.
+                        ftn_selector = self.contract_info.get_selector_from_index(ftn_idx_to_be_executed)
+                        self.instructionModification.modify_instructions_on_multiple_states(laserEVM.open_states, [ftn_selector])
 
         @symbolic_vm.laser_hook("add_world_state")
         def world_state_filter_hook(state: GlobalState):
@@ -280,190 +263,13 @@ class FDG_pruner(LaserPlugin):
                 self._iteration_ = 0
                 return
 
-    def _print_state_info(state: GlobalState) -> None:
-        print(f'==== constraints ====')
-        for constraint in state.world_state.constraints:
-            print(f'\t {constraint}')
-        print(f'==== state.environment.active_account ====')
-        print(f'\t {state.environment.active_account.address}')
-
-        print(f'==== storage of the active_account ====')
-        for key, value in state.environment.active_account.storage.printable_storage.items():
-            print(f'\t key {key}  value {value}')
-
-        print(f'==== memory ====')
-        mem_size = state.mstate.memory_size
-        for i in range(int(mem_size / 32)):
-            word = state.mstate.memory.get_word_at(i)
-            print(f'\t {word}')
-        print(f'==== stack ====')
-        for item in state.mstate.stack:
-            print(f'\t {item}')
-
-
-    def _get_deep_functions(self):
-        deep_functions=[]
-        for key in self.cov_function_coverage.keys():
-            if self.cov_function_coverage[key][0]<=98:
-                # only consider callable functions
-                if key in self.cov_function_instruction_indices.keys():
-                    deep_functions.append(key)
-        return deep_functions
-
-
-    def _select_deep_functions(self,deep_functions:list)->Node:
-        return deep_functions[0]
-
-    def _generate_sequences(self,deep_function:str)->None:
-        # create the node for the deep_function
-        target_ftn_node=Node(fdg.FDG_global.ftn_to_selector[deep_function],\
-                        fdg.FDG_global.ftn_to_idx[deep_function],\
-                        deep_function,"Not Care")
-        if deep_function in self.contract_data.fdg_parents.keys():
-            parents=self.contract_data.fdg_parents[deep_function]
-        else:
-            parents=self.contract_data.get_parents(deep_function)
-        self.seq_generated_sequences=FunctionSequence(target_ftn_node,parents,\
-                                                      self.contract.sv_info,\
-                                                      self.save_state_change_sequences,\
-                                                      self.save_no_state_change_sequences[deep_function])
-
-
-
-    def _update_coverage(self):
-        """
-        update coverage and get uncovered functions
-        :return:
-        """
-        instr_cov_record_list = fdg.FDG_global.ftns_instr_cov
-        if len(instr_cov_record_list) > 0:
-            instr_array = np.array(instr_cov_record_list)
-            self.uncovered_functions = []
-            self.ftn_special_pc = []
-            for ftn, ftn_instr_cov in self.cov_function_coverage.items():
-                if ftn_instr_cov[0] == 100: continue
-                if ftn in self.cov_function_instruction_indices.keys():
-                    status = instr_array[self.cov_function_instruction_indices[ftn]]
+    def _print_sequences(self,nested_sequences):
+        for seq in nested_sequences:
+            ftn_name_seq=[]
+            if seq is None:continue
+            for ftn_idx in seq:
+                if isinstance(ftn_idx,int):
+                    ftn_name_seq.append(self.contract_info.get_name_from_index(ftn_idx))
                 else:
-                    status = instr_array[self.cov_other_instruction_indices[ftn]]
-                cov_instr = sum(status)
-                cov = cov_instr / float(len(status)) * 100
-                self.cov_function_coverage[ftn] = [cov, status]
-
-    def _save_states(self,laserEVM:LaserEVM,flag_save_states_1_phase:bool):
-        for state in laserEVM.open_states:
-            if not state.constraints.is_possible: continue
-            ftn_name = state.node.function_name
-            ftn_seq=get_ftn_seq_annotation_from_ws(state)
-            self.save_cur_iteration_state_change_sequences.append(ftn_seq)
-            key=''
-            for ftn in ftn_seq:
-                key+=";"+ftn
-            if key not in self.OS_states.keys():
-                self.OS_states[key]=[copy(state)]
-            else:
-                self.OS_states[key]+=[copy(state)]
-
-
-    def _collect_pc_for_fct_hashes_in_dispatcher(self, laserEVM:LaserEVM):
-        """
-
-        """
-        if self._iteration_==1:
-            stop_flag=False
-            for state in laserEVM.open_states:
-                if stop_flag:break # collect only from a state at depth 1
-                stop_flag=True
-                key = contract_address.value
-                code=state.accounts[key].code
-                instructions=code.instruction_list
-                fct_instr_offsets=[]
-
-
-                function_hashes=code.func_hashes
-
-                offset_instr=0
-                for instruction in instructions:
-                    opcode=instruction['opcode']
-                    if str(opcode).__eq__('PUSH4'):
-                        if instruction['argument'] in function_hashes:
-                            if not str(instruction['argument']) in self.fct_hash_2_pc_in_dispatcher.keys():
-                                self.fct_hash_2_pc_in_dispatcher[str(instruction['argument'])]=offset_instr
-                            else:self.fct_hash_2_pc_in_dispatcher[str(instruction['argument'])]=[offset_instr]+[self.fct_hash_2_pc_in_dispatcher[str(instruction['argument'])]]
-                            fct_instr_offsets.append(offset_instr)
-                    offset_instr+=1
-                    if len(self.fct_hash_2_pc_in_dispatcher)==len(function_hashes):
-                        break
-                # not yet consider the case of fallback functions
-                min_offset=min(fct_instr_offsets)
-                max_offst=max(fct_instr_offsets)
-                self.instructions_dict['prefix']=instructions[0:min_offset]
-                self.instructions_dict['middle'] = instructions[min_offset:max_offst+4]
-                self.instructions_dict['suffix'] = instructions[max_offst+4:]
-
-    def _modify_dispatcher_in_instruction_list_old(self,state:WorldState,fct_hashes:list):
-        """
-            remoeve the code in dispacher that direct the execution flow to functions in fct_hashes
-        """
-
-        instr_offsets=[self.fct_hash_2_pc_in_dispatcher[signature] for signature in fct_hashes]
-        instr_offsets.sort()
-        remove_instr_offsets=[offset for item in instr_offsets for offset in range(item,item+4)]
-
-        max_instr_offset=max(remove_instr_offsets)
-
-        left_instructions=[]
-        offset=0
-        for instruction in self.instr_list_original[0:max_instr_offset+1]:
-            if not offset in remove_instr_offsets:
-                left_instructions.append(instruction)
-            offset+=1
-
-        left_instructions+=self.instr_list_original[max_instr_offset+1:]
-
-        state.accounts[contract_address.value].code.instruction_list=left_instructions
-        function_hashes = state.accounts[contract_address.value].code.func_hashes
-        state.accounts[contract_address.value].code.func_hashes=[hash for hash in function_hashes if hash not in fct_hashes]
-
-    def _modify_dispatcher_in_instruction_list(self, state: WorldState, fct_hashes: list):
-        """
-            remoeve the code in dispacher that direct the execution flow to functions in fct_hashes
-        """
-
-        remove_fct_hashes=[ftn_hash for ftn_hash in self.fct_hash_2_pc_in_dispatcher.keys() if ftn_hash not in fct_hashes]
-        instr_offsets = [self.fct_hash_2_pc_in_dispatcher[signature] for signature in remove_fct_hashes]
-
-        # Using lambda arguments: expression
-        flatten_list = lambda irregular_list:[element for item in irregular_list for element in flatten_list(item)] if type(irregular_list) is list else [irregular_list]
-        instr_offsets=flatten_list(instr_offsets)
-
-        instr_offsets.sort()
-
-        remove_instr_offsets = [offset for item in instr_offsets for offset in range(item, item + 5)]
-
-        max_instr_offset = max(remove_instr_offsets)
-
-        left_instructions = []
-        offset = len(self.instructions_dict['prefix'])
-        for instruction in self.instructions_dict['middle']:
-            if not offset in remove_instr_offsets:
-                left_instructions.append(instruction)
-            else:
-                left_instructions.append({"address": instruction["address"], "opcode": "EMPTY"})
-            offset += 1
-
-        len_mid=len(left_instructions)
-        for i in range(len_mid):
-            if left_instructions[len_mid-i-1]['opcode'].__eq__('EMPTY'):
-                continue
-
-            if left_instructions[len_mid-i-1]['opcode'].__eq__('DUP1'):
-                left_instructions[len_mid-i-1]['opcode']="EMPTY"
-            break
-
-
-
-        modify_instructions= self.instructions_dict['prefix']+left_instructions+self.instructions_dict['suffix']
-
-        state.accounts[contract_address.value].code.instruction_list = copy(modify_instructions)
-        state.accounts[contract_address.value].code.func_hashes = fct_hashes
+                    ftn_name_seq.append(ftn_idx)
+            print(ftn_name_seq)

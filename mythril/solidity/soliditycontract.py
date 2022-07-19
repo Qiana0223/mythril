@@ -161,6 +161,7 @@ class SolidityContract(EVMContract):
                             elif 'isConstructor' in node.keys():
                                 if node['isConstructor']:
                                     ftn_name='constructor'
+                                else:ftn_name='fallback'
                             if ftn_name=='fallback':
                                 self.ftns_ast_srcmap[con_name][ftn_name] = [int(item) for item in
                                                                             str(node["src"]).split(':')]

@@ -320,7 +320,7 @@ if __name__=='__main__':
 
     colors = ['orange','green','purple','brown','black','olive','cyan','navy','blueviolet','purple','magenta','crimson']
 
-    ftn_info = Function_info('/home/wei/PycharmProjects/Contracts/_wei/HoloToken.sol', 'HoloToken')
+    # ftn_info = Function_info('/home/wei/PycharmProjects/Contracts/_wei/HoloToken.sol', 'HoloToken')
 
 
     # ftn_info = Function_info('/home/wei/PycharmProjects/Contracts/_wei/Crowdsale.sol', 'Crowdsale')
@@ -409,9 +409,9 @@ if __name__=='__main__':
     # ftn_info = Function_info('/media/sf___share_vms/__contracts_1818/Bounty.sol',
     #                          'Bounty')
 
-    ftn_info = Function_info('//media/sf___share_vms/sGuard_contracts/0x390c8b4e5c5ddac6f0e5cdbae596903041389223.sol',
-                             'P2pSwap')
-
+    # ftn_info = Function_info('//media/sf___share_vms/sGuard_contracts/0x390c8b4e5c5ddac6f0e5cdbae596903041389223.sol',
+    #                          'P2pSwap')
+    ftn_info = Function_info('/home/wei/PycharmProjects/Contracts/_wei/HoloToken_test_01.sol', 'HoloToken_test_01')
 
     functionsDict = ftn_info.functions_dict_slither()
 

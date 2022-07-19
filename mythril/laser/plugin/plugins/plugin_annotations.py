@@ -144,9 +144,7 @@ class FunctionAnnotation(MergeableStateAnnotation):
 
         return result
     def check_merge_annotation(self, other: "FunctionAnnotation"):
-        # if not isinstance(other, FunctionAnnotation):
-        #     raise TypeError("Expected an instance of FunctionAnnotation")
-        # return True
+
         pass
 
     def merge_annotation(self, other: "FunctionAnnotation"):

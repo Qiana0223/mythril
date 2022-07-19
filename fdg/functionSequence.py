@@ -5,7 +5,7 @@ SEQUENCE_NUM_LIMIT=fdg.FDG_global.seq_num_limit # default 5
 sub_SEQUENCE_NUM_LIMIT=3 # default 3,
 
 class FunctionSequence():
-    def __init__(self, ftn_node:Node=None,ftn_parents_list:list=None, sv_info:dict=None,state_change_sequences=None,no_state_change_sequences=None ):
+    def __init__(self, ftn_node:Node=None, ftn_parents_list:list=None, sv_info:dict=None, state_change_sequences=None, no_state_change_sequences=None):
         self.ftn_node=ftn_node
         self.ftn_parents_list=ftn_parents_list
 
@@ -32,9 +32,8 @@ class FunctionSequence():
                     break
                 else:
                     sequences+=sorted_v
-        for seq in sequences:
-            sequence_selectors.append([fdg.FDG_global.ftn_to_selector[ftn] for ftn in seq])
-        return sequence_selectors
+
+        return sequences
 
 
 
@@ -43,10 +42,10 @@ class FunctionSequence():
     def _get_sequences(self):
         label_parents = {}
         for node in self.ftn_parents_list:
-            if node.edge_label not in label_parents.keys():
-                label_parents[node.edge_label] = [node.full_name]
+            if node.incoming_edge_label not in label_parents.keys():
+                label_parents[node.incoming_edge_label] = [node.full_name]
             else:
-                label_parents[node.edge_label] += [node.full_name]
+                label_parents[node.incoming_edge_label] += [node.full_name]
 
         num_unique_edge_labels=len(label_parents.keys())
         if (num_unique_edge_labels)>1:
@@ -99,7 +98,7 @@ class FunctionSequence():
                     prt_idx_seq_comb=[]
                     # use numbers to replace each function in the sequences
                     for seq in prt_seq_comb:
-                        prt_idx_seq_comb+=[fdg.FDG_global.ftn_to_idx[ftn] for ftn in seq]
+                        prt_idx_seq_comb.append([fdg.FDG_global.ftn_to_idx[ftn] for ftn in seq])
                     seq=self._get_a_topological_sequence(prt_idx_seq_comb)
                     if seq not in sequences:
                         sequences.append(seq)
@@ -108,7 +107,7 @@ class FunctionSequence():
         final_sequences=[]
         for seq in sequences:
             ftn_seq=[fdg.FDG_global.idx_to_ftn[idx] for idx in seq if idx!=0] # do not consider constructor indexed 0
-            ftn_seq+=self.ftn_node.full_name
+
             final_sequences.append(ftn_seq)
         return final_sequences
 
@@ -179,7 +178,7 @@ class FunctionSequence():
                     if seq[0] not in graph[0]:
                         graph[0].append(seq[0])
                     if seq[0] not in graph.keys():
-                        graph[seq[0]] = [self.ftn_idx]
+                        graph[seq[0]] = [self.ftn_node.index]
                     else:
                         if self.ftn_node.index not in graph[seq[0]]:
                             graph[seq[0]] += [self.ftn_node.index]
@@ -208,7 +207,7 @@ class FunctionSequence():
             return graph
 
         # A recursive function used by topologicalSort
-        def topologicalSortUtil(graph:dict,v,visited, stack):
+        def topologicalSortUtil(graph:dict,v,visited:dict, stack):
             # Mark the current node as visited.
             visited[v] = True
             # Recur for all the vertices adjacent to this vertex
@@ -222,23 +221,26 @@ class FunctionSequence():
         all_nodes=[]
         for seq in sequences:
             all_nodes+=seq
-        num_nodes=2+len(set(all_nodes))
+        all_nodes= list(set(all_nodes))+[0,self.ftn_node.index]
+        num_nodes=len(all_nodes)
 
         # build the graph
         graph=get_graph(sequences)
 
         # get the path
         # Mark all the vertices as not visited
-        visited = [False] * num_nodes
+        visited={}
+        for node_idx in all_nodes:
+            visited[node_idx]=False
+        # visited = [False] * num_nodes
         stack = []
         # Call the recursive helper function to store Topological
         # Sort starting from all vertices one by one
-        for i in range(num_nodes):
+        for i in visited.keys():
             if visited[i] == False:
                 topologicalSortUtil(graph,i, visited, stack)
-
-
         return stack
+
 
 
 if __name__=='__main__':

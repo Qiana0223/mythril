@@ -57,6 +57,7 @@ class LaserPluginLoader(object, metaclass=Singleton):
         :param symbolic_vm: The virtual machine to instrument the plugins with
         :param with_plugins: Override the globally enabled/disabled builders and load all plugins in the list
         """
+        coveragePlugin=None # save coverage plugin
         for plugin_name, plugin_builder in self.laser_plugin_builders.items():
             enabled = (
                 plugin_builder.enabled
@@ -68,5 +69,13 @@ class LaserPluginLoader(object, metaclass=Singleton):
                 continue
 
             log.info(f"Instrumenting symbolic vm with plugin: {plugin_name}")
-            plugin = plugin_builder(**self.plugin_args.get(plugin_name, {}))
+            if plugin_name.__eq__("fdg-pruner"): #@wei take the coverage plugin instance as a parameter to get the fdg-pruner instance
+                # assume that the coverage plugin is initialized before the fdg-pruner
+                plugin = plugin_builder(**self.plugin_args.get(plugin_name, {"instructionCoveragePlugin":coveragePlugin}))
+            else:
+                plugin = plugin_builder(**self.plugin_args.get(plugin_name, {}))
             plugin.initialize(symbolic_vm)
+            if plugin_name.__eq__("coverage"): #@wei save the instance of the coverage plguin instance
+                coveragePlugin=plugin
+
+

@@ -1,68 +1,11 @@
 import itertools as it
+import numpy as np
 
-# get valid pc interval from a list of PCs of opcode GT
-def get_valid_pc_interval(gt_pc_list:list,max_pc_value:int):
-    gt_pc_list.sort()
-    pairs = []
-    step = 5
-
-    for i in range(1, len(gt_pc_list)):
-        if gt_pc_list[i] == gt_pc_list[i - 1] + step:
-            continue
-        else:
-            pairs.append((gt_pc_list[i - 1], gt_pc_list[i]))
-    pairs.append((gt_pc_list[-1], max_pc_value))
-    return pairs
-
-# check if a pc is in the valid pc intervals
-def pc_is_valid(pc:int,valid_pc_intervals:list):
-    for item in valid_pc_intervals:
-        if pc >item[0] and pc<item[1]:
-            return True
-    return False
-
-def assign_pc_seq_exe_phase_dup1(current_pc: int, pc_list: list,ftn_not_covered_pc:list, pc_interval_dict: dict) -> int:
-    if len(pc_list)>0:
-        for pc in pc_list:
-            if current_pc <= pc:
-                return pc
-        return pc_interval_dict['pc_interval_end']
-    if len(ftn_not_covered_pc)>=1:
-        for pc in ftn_not_covered_pc:
-            if current_pc<=pc:
-                return pc
-    return pc_interval_dict['pc_interval_end']
-
-
-def assign_pc(current_pc: int, pc_list: list,executed_pc:list,ftn_not_covered_pc:list, pc_interval_dict: dict) -> int:
-    if len(pc_list)>0:
-        for pc in pc_list:
-            if pc in executed_pc:continue
-            if current_pc <= pc:
-                return pc
-        return pc_interval_dict['pc_interval_end']
-    if len(ftn_not_covered_pc)>=1:
-        for pc in ftn_not_covered_pc:
-            if pc in executed_pc: continue
-            if current_pc<=pc:
-                return pc
-    return pc_interval_dict['pc_interval_end']
-
-def assign_pc_fdg_phase_dup1(current_pc: int, pc_list:list,pc_interval_dict: dict) -> int:
-    if len(pc_list)>0:
-        for pc in pc_list:
-            if current_pc <= pc:
-                return pc
-    return pc_interval_dict['pc_interval_end']
-
-def assign_pc_special_ftn_dup1(current_pc: int, pc_list:list,executed_pc:list,pc_interval_dict: dict) -> int:
-    if len(pc_list)>0:
-        for pc in pc_list:
-            if pc in executed_pc:continue
-            if current_pc <= pc:
-                return pc
-    return pc_interval_dict['pc_interval_end']
-
+def random_select(sequences: list, num_selected: int):
+    if len(sequences)>num_selected:
+        select = np.random.choice(range(len(sequences)), size=num_selected, replace=False)
+        return [sequences[idx] for idx in select]
+    else: return sequences
 
 
 def get_combination(list_for_comb,comb_length:int):
@@ -86,8 +29,11 @@ def get_combination(list_for_comb,comb_length:int):
 
 def get_combination_for_a_list(list_for_comb,comb_length:int):
     re=[]
+    if comb_length==1:
+        re=[[item] for item in list_for_comb]
+        return re
     for item in it.combinations(list_for_comb, comb_length):
-        re.append(item)
+        re.append(list(item))
     return re
 
 
@@ -102,13 +48,20 @@ def get_binary(length:int,number:int):
     return bin_list
 
 
+
 if __name__ == '__main__':
     import numpy as np
     print(get_binary(7,16))
     print(get_binary(6,16))
     print(np.random.choice(range(10), size=2, replace=False))
-    print(get_combination_for_a_list([1,2,3],2))
+    print(get_combination_for_a_list([1,2,3],3))
     print(get_combination([["1","2"], ["b"]], 2))
+
+    sv1_seq_indices = range(2)
+    sv2_seq_indices = range(1)
+    sv3_seq_indices = range(2)
+    comb_indices = get_combination([sv1_seq_indices, sv2_seq_indices,sv3_seq_indices], 3)
+    print(comb_indices)
 
 
 
