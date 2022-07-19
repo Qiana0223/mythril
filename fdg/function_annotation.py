@@ -59,6 +59,7 @@ def get_function_annotation(state: GlobalState) -> FunctionAnnotation:
         annotation = annotations[0]
 
     return annotation
+
 def get_ws_function_annotation(state: GlobalState) -> WSFunctionAnnotation:
     """ Returns the world state annotation
 

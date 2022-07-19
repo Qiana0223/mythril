@@ -2,7 +2,7 @@ from slither.core.declarations.function_contract import FunctionContract
 from slither.slither import Slither
 
 import fdg
-from fdg.node import Node
+
 import sha3
 
 class ContractInfo():

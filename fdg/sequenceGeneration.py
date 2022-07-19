@@ -503,7 +503,6 @@ class SequenceGeneration():
         return generated_sequences
 
 if __name__=="__main__":
-    # sequences=[[2,3],[4]]
     sequences = [[4],[2, 3]]
     seqGnt=SequenceGeneration()
     seq=seqGnt._get_a_topological_sequence(5,[[0,1,2],[0,'sv',3,4]])

@@ -3,12 +3,11 @@
 
 import logging
 import traceback
-from copy import copy
+
 from typing import Optional, List
 
 from fdg import FDG_global
-from fdg.funtion_info import Function_info
-from mythril.laser.ethereum.iprof import InstructionProfiler
+
 from . import MythrilDisassembler
 from mythril.support.source_support import Source
 from mythril.support.loader import DynLoader
