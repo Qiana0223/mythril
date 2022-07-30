@@ -1,17 +1,24 @@
 from copy import copy
 import numpy as np
-global control_level
-control_level=2
 
-global seq_num_limit
+global function_coverage_threshold
+function_coverage_threshold=100
+
+
+
+# max depth of sequence in FDG is set to 5
+global phase1_depth_limit
+phase1_depth_limit=2
+
+
+global flag_phase2
+flag_phase2=1  # 1: means include phase 2; others: does not include phase 2;
+
+
+
 seq_num_limit=5
-
-global num_sequences_write_1_SV
-num_sequences_write_1_SV=2
-
-
-global prt_subset_num_limit
 prt_subset_num_limit=5
+
 
 global print_ftn_coverage
 print_ftn_coverage=1
@@ -24,9 +31,8 @@ transaction_count=50
 global solidity_path
 global contract
 
-# max depth of sequence in FDG is set to 5
-global fdg_execution_depth
-fdg_execution_depth=2
+
+
 
 # save the coverage (from coverage_plugin)
 global coverage

@@ -15,14 +15,6 @@ class SequenceGeneration():
     def generate_sequences(self,ftn_idx)->list:
 
         print(f'===================================')
-        seconds_start3 = time.time()
-        sequences_heuristic = self.generate_sequences_by_heuristic_method(ftn_idx)
-        seconds_end3 = time.time()
-        sequences_heuristic.sort(key=len)
-        print(f'sequences_heuristic({ftn_idx})={sequences_heuristic}')
-        print(f'time used to generate sequences_heuristic:{seconds_end3 - seconds_start3}')
-
-        print(f'===================================')
         seconds_start4 = time.time()
         sequences_paper = self.generate_sequences_paper(ftn_idx)
         seconds_end4 = time.time()
@@ -32,21 +24,6 @@ class SequenceGeneration():
 
 
 
-        print(f'===================================')
-        seconds_start1 = time.time()
-        sequences_random_parentGroups = self.generate_sequences_by_randomly_parentGroups_parents(ftn_idx)
-        seconds_end1 = time.time()
-        sequences_random_parentGroups.sort(key=len)
-        print(f'sequences_random_parentGroups({ftn_idx})={sequences_random_parentGroups}')
-        print(f'time used to generate sequences_random_parentGroups:{seconds_end1 - seconds_start1}')
-
-        print(f'===================================')
-        seconds_start2 = time.time()
-        sequences_random_parents = self.generate_sequences_by_randomly_parents(ftn_idx)
-        seconds_end2 = time.time()
-        sequences_random_parents.sort(key=len)
-        print(f'sequences_random_parents ({ftn_idx})={sequences_random_parents }')
-        print(f'time used to generate sequences_random_parents :{seconds_end2 - seconds_start2}')
         return sequences_paper
 
 

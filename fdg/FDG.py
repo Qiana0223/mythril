@@ -8,7 +8,7 @@ from fdg.contractInfo import ContractInfo
 SV_NOT_CONSIDER=['mapping','array']
 class FDG():
 
-    def __init__(self,contractInfo:ContractInfo,level_phase1=1,level_phase2=1):
+    def __init__(self,contractInfo:ContractInfo,level_phase1=0,level_phase2=1):
         """
         :param contractInfo:
         :param level:

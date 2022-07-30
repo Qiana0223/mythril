@@ -17,9 +17,9 @@ class SequenceAndState():
 
         self.function_parents={}
 
-        self.deep_functions_1st_time=[] # record how many deep functions are there
 
-    def get_deep_functions_1st_time(self): return self.deep_functions_1st_time
+
+
     def save_state_and_its_sequence(self,state:WorldState)->list:
         """
         assume that the constraints of the state is satisfied (i.e., they are checked before being passed to this function
@@ -76,22 +76,7 @@ class SequenceAndState():
     def get_state(self,key)->WorldState:
         return self.worldState_dict[key]
 
-    def compute_deep_functions(self):
-        """
-        get deepd functions based on whether the function is meaningfully executed
-        (the execution of its all paths reverts)
-        if a function has 100% instruction coverage, it is not a deep function(as we only keep track of state changing seqeunces, there are non-state-changing sequences)
-        :return:
-        """
-        deep_functions=[]
-        deep_functions_cov=self.functionCoverage.get_deep_functions_coverage()
-        for ftn_idx in range(2, len(self.contractInfo.function_info.keys())):
-            if ftn_idx in deep_functions_cov:
-                if ftn_idx not in self.sequence_changing_state_dict.keys():
-                    deep_functions.append(ftn_idx)
-        if len(self.deep_functions_1st_time)==0: # save all deep functions
-            self.deep_functions_1st_time=deep_functions
-        return deep_functions
+
 
     def has_state_changing_sequences(self,ftn_idx:int)->bool:
         if ftn_idx in self.sequence_changing_state_dict.keys():

@@ -436,13 +436,14 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
         default=2,
         help="Maximum number of transactions issued by laser",
     )
+
     #@wei
     options.add_argument(
-        "-cl",
-        "--control-level",
+        "-fct",
+        "--function-coverage-threshold",
         type=int,
-        default=2,
-        help="possible values:0,1,2,3,4,5,6,7,8. the control level for sequence generation",
+        default=100,
+        help="specify the code coverage threshold that is used to determine deep functions",
     )
     #@wei
     options.add_argument(
@@ -454,11 +455,19 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
     )
     #@wei
     options.add_argument(
-        "-pnl",
-        "--parent-subset-number-limit",
+        "-p1",
+        "--phase1-depth-limit",
         type=int,
-        default=5,
-        help="limit the number of seqeunces generated for each function that will be assigned to be executed.",
+        default=2,
+        help="limit the execution depth in phase 1.",
+    )
+
+    options.add_argument(
+        "-p2",
+        "--flag-phase2",
+        type=int,
+        default=1,
+        help="indicate if phase 2 should be included.1: means yes; ohters mean no.",
     )
 
     #@wei
@@ -734,9 +743,10 @@ def execute_command(
 
     elif args.command in ANALYZE_LIST:
         #@wei
-        fdg.FDG_global.control_level =args.control_level
+        fdg.FDG_global.function_coverage_threshold = args.function_coverage_threshold
+        fdg.FDG_global.phase1_depth_limit = args.phase1_depth_limit
+        fdg.FDG_global.flag_phase2=args.flag_phase2
         fdg.FDG_global.seq_num_limit = args.sequence_number_limit
-        fdg.FDG_global.prt_subset_num_limit = args.parent_subset_number_limit
         fdg.FDG_global.print_ftn_coverage=args.print_ftn_coverage
         fdg.FDG_global.sequences=args.sequences
 

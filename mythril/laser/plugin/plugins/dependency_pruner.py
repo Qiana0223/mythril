@@ -336,7 +336,7 @@ class DependencyPruner(LaserPlugin):
                 return
 
             #@wei for sequence execution, ignore dependency pruner(critical)
-            if self.iteration>fdg.FDG_global.fdg_execution_depth+1:
+            if self.iteration>fdg.FDG_global.phase1_depth_limit+1:
                 return
 
             # Don't skip newly discovered blocks

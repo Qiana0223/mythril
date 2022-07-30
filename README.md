@@ -1,6 +1,6 @@
 
 # SmartExecutor
-<p>SmartExecutor is designed to reduce the state space of symbolic execution on smart contracts .</p>
+<p>SmartExecutor is designed to reduce the sequence explosion of symbolic execution on smart contracts .</p>
 <p>It is built on top of Mythril.</p>
 
 

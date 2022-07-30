@@ -1,10 +1,12 @@
+from fdg.FunctionCoverage import FunctionCoverage
 from fdg.sequenceAndState import SequenceAndState
 
 
 class SequenceExecutionControl():
-    def __init__(self,sequenceAndState:SequenceAndState):
+    def __init__(self,sequenceAndState:SequenceAndState,functionCoverage:FunctionCoverage):
         self.sequenceAndState=sequenceAndState
-        self.deep_function=0
+        self.functionCoverage=functionCoverage
+        self.deep_function=0 # integer
         self.flag_to_generate_sequences=True
         self.generated_sequences=[]
         self.sequence_cur_in_execution=[]
@@ -27,7 +29,6 @@ class SequenceExecutionControl():
         self.sequence_cur_in_execution=self.generated_sequences[self.sequence_index]
 
 
-
     def end_exe_a_function(self):
         """
         update
@@ -35,9 +36,14 @@ class SequenceExecutionControl():
         """
         self.function_index+=1
         if self.function_index >= len(self.sequence_cur_in_execution): # finish executing a sequence
-            # check if the deep function is meaningfully executed, if yes, go to the next deep function
-            if self.sequenceAndState.has_state_changing_sequences(self.deep_function):
-                self.flag_to_generate_sequences=True
+            # # check if the deep function is meaningfully executed, if yes, go to the next deep function
+            # if self.sequenceAndState.has_state_changing_sequences(self.deep_function):
+            #     self.flag_to_generate_sequences=True
+            #     return
+
+            # check if the deep function has 100% code coverage, if yes, go to the next deep function
+            if not self.functionCoverage.is_a_deep_function(self.deep_function):
+                self.flag_to_generate_sequences = True
                 return
             self.sequence_index += 1
             if self.sequence_index >= len(self.generated_sequences):
@@ -48,6 +54,7 @@ class SequenceExecutionControl():
                 # update the sequence to be executed
                 self.sequence_cur_in_execution = self.generated_sequences[self.sequence_index]
                 self.function_index = 0
+
 
     def start_exe_a_function(self):
         """
@@ -78,7 +85,6 @@ class SequenceExecutionControl():
                 return None,self.sequence_cur_in_execution[self.function_index]
         else:
             return None,None
-
 
 
     def need_to_generate_sequences(self)->bool:
