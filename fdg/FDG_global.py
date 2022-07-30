@@ -21,7 +21,7 @@ seq_num_limit=0
 
 
 global print_ftn_coverage
-print_ftn_coverage=1
+print_ftn_coverage=0
 
 # control the number of symbolic transactions issued by LaserEVM
 global transaction_count

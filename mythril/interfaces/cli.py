@@ -483,7 +483,7 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
         "-p",
         "--print-ftn-coverage",
         type=int,
-        default=1,
+        default=0,
         help="0: no; 1:print function coverage",
     )
     options.add_argument(
