@@ -16,8 +16,8 @@ flag_phase2=1  # 1: means include phase 2; others: does not include phase 2;
 
 
 
-seq_num_limit=5
-prt_subset_num_limit=5
+seq_num_limit=0
+
 
 
 global print_ftn_coverage

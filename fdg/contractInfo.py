@@ -34,7 +34,7 @@ class ContractInfo():
                 self.stateVariable_info[sv.name] = [sv.type,fdg.FDG_global.non_primitive_index]
             else:
                 self.stateVariable_info[sv.name] = [sv.type,fdg.FDG_global.primitive_index]
-            print(f'{sv}:{sv.type}')
+            # print(f'{sv}:{sv.type}')
 
     def get_sv_type(self, sv:str)->int:
         assert sv in self.stateVariable_info.keys()

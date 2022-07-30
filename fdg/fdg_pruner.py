@@ -95,16 +95,19 @@ class FDG_pruner(LaserPlugin):
 
         @symbolic_vm.laser_hook("stop_sym_exec")
         def stop_sym_exec_hook():
+            deep_functions_1st_time = self.functionCoverage.get_deep_functions_1st_time()
+            if len(deep_functions_1st_time) > 0:
+                print(f'@@WEI:go_through_sequence_generation')
+            # print(f'@@total_instruction:{len(self.instructionModification.instruction_list)}')
+
+            if fdg.FDG_global.print_ftn_coverage != 1: return
+
             self.functionCoverage.compute_coverage()
-            if fdg.FDG_global.print_ftn_coverage==1:
-                print(f'End of symbolic execution')
-                for ftn, ftn_cov in self.functionCoverage.get_function_coverage().items():
-                    print("{:.2f}% coverage for {}".format(ftn_cov, ftn))
-            deep_functions_1st_time=self.functionCoverage.get_deep_functions_1st_time()
+            for ftn, ftn_cov in self.functionCoverage.get_function_coverage().items():
+                print("{:.2f}% coverage for {}".format(ftn_cov, ftn))
             if len(deep_functions_1st_time)>0:
                 deep_function_in_the_end=self.functionCoverage.compute_deep_functions()
                 print(f'deep functions: {len(deep_functions_1st_time)-len(deep_function_in_the_end)} out of {len(deep_functions_1st_time)} is(are) meaningfully executed.')
-
                 print(f'all deep function(s): {deep_functions_1st_time}')
                 print(f'left deep function(s): {deep_function_in_the_end}')
                 for idx in range(2, len(self.contract_info.function_info.keys())):
@@ -120,15 +123,12 @@ class FDG_pruner(LaserPlugin):
             :param laserEVM: instance of LaserEVM
             :return:
             """
-
-
             self._iteration_ += 1
-            print(f'start: self._iteration_={self._iteration_}')
 
             if self._iteration_==1:
                 self.instructionModification.feed_instructions(laserEVM,contract_address)
-                self.save_cur_iteration_all_sequences=[[ftn_idx] for ftn_idx in self.contract_info.function_info.keys()-[0] ]
-                self.save_cur_iteration_state_change_sequences=[]
+                # self.save_cur_iteration_all_sequences=[[ftn_idx] for ftn_idx in self.contract_info.function_info.keys()-[0] ]
+                # self.save_cur_iteration_state_change_sequences=[]
 
             # specify the functions to be executed on each open states(world states)
             if self._iteration_ <=fdg.FDG_global.phase1_depth_limit and self._iteration_>1:
@@ -151,9 +151,9 @@ class FDG_pruner(LaserPlugin):
                         children = self.FDG.get_children(ftn_idx_seq[-1])
                     if len(children)>0:
                         children_selectors=[self.contract_info.get_selector_from_index(idx) for idx in children]
-                        # save sequences to be executed
-                        for idx in children:
-                            self.save_cur_iteration_all_sequences.append(ftn_idx_seq + [idx])
+                        # # save sequences to be executed
+                        # for idx in children:
+                        #     self.save_cur_iteration_all_sequences.append(ftn_idx_seq + [idx])
 
                         # modify function dispatcher so that only specified functions are executed
                         modified_state=deepcopy(state)
@@ -172,7 +172,7 @@ class FDG_pruner(LaserPlugin):
             :param laserEVM:
             :return:
             """
-            print(f'end: self._iteration_={self._iteration_}')
+            # print(f'end: self._iteration_={self._iteration_}')
             if self._iteration_ == 0: return
 
             # save states and their corresponding sequences
@@ -185,20 +185,20 @@ class FDG_pruner(LaserPlugin):
 
             for state in laserEVM.open_states:
                 ftn_seq=self.sequenceAndState.save_state_and_its_sequence(state)
-                self.save_cur_iteration_state_change_sequences.append(ftn_seq)
+                # self.save_cur_iteration_state_change_sequences.append(ftn_seq)
 
 
-            # save non-state-changing sequences
-            self.sequenceAndState.save_sequences_not_changing_states(self.save_cur_iteration_all_sequences,
-                                                         self.save_cur_iteration_state_change_sequences)
+            # # save non-state-changing sequences
+            # self.sequenceAndState.save_sequences_not_changing_states(self.save_cur_iteration_all_sequences,
+            #                                              self.save_cur_iteration_state_change_sequences)
 
-            # empty saved sequences
-            print(f'cur_all sequence(s):{self.save_cur_iteration_all_sequences}')
-            self._print_sequences(self.save_cur_iteration_all_sequences)
-            print(f'cur_state_change sequence(s):{self.save_cur_iteration_state_change_sequences}')
-            self._print_sequences(self.save_cur_iteration_state_change_sequences)
-            self.save_cur_iteration_all_sequences = []
-            self.save_cur_iteration_state_change_sequences=[]
+            # # empty saved sequences
+            # print(f'cur_all sequence(s):{self.save_cur_iteration_all_sequences}')
+            # self._print_sequences(self.save_cur_iteration_all_sequences)
+            # print(f'cur_state_change sequence(s):{self.save_cur_iteration_state_change_sequences}')
+            # self._print_sequences(self.save_cur_iteration_state_change_sequences)
+            # self.save_cur_iteration_all_sequences = []
+            # self.save_cur_iteration_state_change_sequences=[]
 
             # check the code coverage for each function
             if self._iteration_==fdg.FDG_global.phase1_depth_limit:
@@ -211,9 +211,9 @@ class FDG_pruner(LaserPlugin):
                     return
 
             if self.flag_phase2_start:
-                print(f' number of open_states: {len(laserEVM.open_states)}')
-                print(f'length of the current sequence: {len(self.seqExeControl.sequence_cur_in_execution)}')
-                print(f'current index: {self.seqExeControl.function_index}')
+                # print(f' number of open_states: {len(laserEVM.open_states)}')
+                # print(f'length of the current sequence: {len(self.seqExeControl.sequence_cur_in_execution)}')
+                # print(f'current index: {self.seqExeControl.function_index}')
                 self.seqExeControl.end_exe_a_function()
 
             # signal to start sequence execution
@@ -254,8 +254,8 @@ class FDG_pruner(LaserPlugin):
                         laserEVM.open_states = deepcopy(self.sequenceAndState.get_state(key))
                     # execute the function
                     if ftn_idx_to_be_executed is not None:
-                        # save the sequence that will be executed in this iteration
-                        self.save_cur_iteration_all_sequences.append(self.seqExeControl.get_current_sequence_in_execution())
+                        # # save the sequence that will be executed in this iteration
+                        # self.save_cur_iteration_all_sequences.append(self.seqExeControl.get_current_sequence_in_execution())
 
                         # modify the instructions of the states so that only the specified function is executed
                         # as one sequence is executed at one time, on all open states, the same function is executed.

@@ -1,6 +1,7 @@
 
 from fdg import utils
 from fdg.FDG import FDG
+import fdg.FDG_global
 from fdg.sequenceAndState import SequenceAndState
 
 
@@ -13,7 +14,13 @@ class SequenceGeneration():
     def generate_sequences(self,ftn_idx)->list:
         sequences_paper = self.generate_sequences_paper(ftn_idx)
         sequences_paper.sort(key=len)
-        return sequences_paper
+        if fdg.FDG_global.seq_num_limit==0: # no limit on the number of sequences
+            return sequences_paper
+        else:
+            if len(sequences_paper)>fdg.FDG_global.seq_num_limit:
+                return sequences_paper[0:fdg.FDG_global.seq_num_limit]
+            else:
+                return sequences_paper
 
     def parent_sequences_write_one_SV(self, ftn_idx:int,parent_list:list,n:int,min_length:int)->list:
         """
