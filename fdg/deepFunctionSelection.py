@@ -17,6 +17,11 @@ class DeepFunctionSelection():
         return -1
 
     def select_a_deep_function(self,deep_functions:list):
+        """
+        those functions are selected first, each parent group(writing the same state variables) of which has valid sequences
+        :param deep_functions:
+        :return:
+        """
         target_ftn=-1
         for ftn_idx in deep_functions:
             if ftn_idx in self.selected_history: continue  # do not consider a function that has been considered
@@ -58,7 +63,7 @@ class DeepFunctionSelection():
             self.selected_history.append(target_ftn)
             return target_ftn
         else:
-            print(f' randomly select deep function ')
+            # randomly select in this case
             return self.select_a_deep_function_simple(deep_functions)
 
 

@@ -72,7 +72,6 @@ class FunctionCoverage():
         :return:
         """
         if ftn_idx not in self.index_to_ftn_pure_name.keys():
-            print(f'{ftn_idx} is a deep function')
             return True
         ftn_pure_name=self.index_to_ftn_pure_name[ftn_idx]
 
@@ -88,9 +87,7 @@ class FunctionCoverage():
                 cov = cov_instr / float(len(status)) * 100
                 self.function_coverage[ ftn_pure_name] = cov
                 if cov==fdg.FDG_global.function_coverage_threshold:
-                    print(f'{ftn_idx} is not a deep function')
                     return False # not a deep function
-        print(f'{ftn_idx} is a deep function, coverage is {cov}')
         return True
 
 

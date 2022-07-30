@@ -77,7 +77,6 @@ class SequenceExecutionControl():
                 self.function_index+=1
                 if self.function_index>=len(self.sequence_cur_in_execution):
                     # the sequence has already been executed(check)
-                    print(f'the sequence has already been executed(check){self.sequence_cur_in_execution}')
                     return None,None
                 else:
                     return key,self.sequence_cur_in_execution[self.function_index]

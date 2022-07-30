@@ -156,6 +156,4 @@ class InstructionModification():
 
         return final_instructions
 
-if __name__=='__main__':
-    a=[0,1,2]
-    print(a[:-1])
+
