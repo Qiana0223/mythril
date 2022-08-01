@@ -76,7 +76,7 @@ class FDG_pruner(LaserPlugin):
         @symbolic_vm.laser_hook("start_sym_exec")
         def start_sym_exec_hook():
             # get contract data
-            self.contract_info=ContractInfo(fdg.FDG_global.solidity_path, fdg.FDG_global.contract)
+            self.contract_info=ContractInfo(fdg.FDG_global.solidity_path, fdg.FDG_global.contract,fdg.FDG_global.method_identifiers)
             self.functionCoverage.set_index_to_ftn_pure_name(self.contract_info.ftn_to_idx)
 
             # create an FDG

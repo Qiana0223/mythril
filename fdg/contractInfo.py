@@ -6,10 +6,10 @@ import fdg
 import sha3
 
 class ContractInfo():
-    def __init__(self,solidity_file:str, contract_name:str):
+    def __init__(self,solidity_file:str, contract_name:str,method_identifiers:dict):
         self.solidity_file=solidity_file
         self.contract_name=contract_name.lstrip().rstrip()
-
+        self.methods_identifiers=method_identifiers
         self.slither_contract=Slither(self.solidity_file).get_contract_from_name(self.contract_name)
 
         self.function_info = {}
@@ -134,8 +134,22 @@ class ContractInfo():
             func_hash = 'None'
             return {"name":ftn.full_name,"write_sv":w_list,"read_sv":r_list,"read_sv_condition":r_list_condition,"selector":func_hash}
         else:
-            func_hash = self._get_function_selector(ftn.full_name)
-            return {"name": ftn.full_name, "write_sv": w_list, "read_sv": r_list, "read_sv_condition": r_list_condition,
+            func_hash = None
+            # # get function hash based on information in Slither
+            # func_hash = self._get_function_selector(ftn.full_name)
+
+            # get function hash from given information
+            ftn_full_name = ftn.full_name
+            if ftn_full_name in self.method_identifiers.keys():
+                func_hash = "0x" + self.method_identifiers[ftn.full_name]
+            else:
+                for full_name, hash in self.method_identifiers.items():
+                    pure_name = str(full_name).split("(")[0]
+                    if ftn.name.__eq__(pure_name):
+                        func_hash = "0x" + hash
+                        ftn_full_name = full_name
+
+            return {"name": ftn_full_name, "write_sv": w_list, "read_sv": r_list, "read_sv_condition": r_list_condition,
                     "selector": func_hash}
 
     def _get_function_selector(self, sig: str) ->str:
