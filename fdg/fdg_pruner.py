@@ -95,6 +95,7 @@ class FDG_pruner(LaserPlugin):
 
         @symbolic_vm.laser_hook("stop_sym_exec")
         def stop_sym_exec_hook():
+            # make sure deep functions are not checked in phase 1.
             deep_functions_1st_time = self.functionCoverage.get_deep_functions_1st_time()
             if len(deep_functions_1st_time) > 0:
                 print(f'@@WEI:go_through_sequence_generation')
@@ -121,13 +122,12 @@ class FDG_pruner(LaserPlugin):
             """
             self._iteration_ += 1
 
-            if not self.flag_phase2_start:  # i.e. in phase 1
-                if self._iteration_ == 1:
-                    self.instructionModification.feed_instructions(laserEVM, contract_address)
+            if self._iteration_ == 1:
+                self.instructionModification.feed_instructions(laserEVM, contract_address)
 
-                if fdg.FDG_global.phase1_execute_all_sequences == 1:
-                    # execute all sequences, thus does not need to identify childrens in phase 1
-                    return
+            if fdg.FDG_global.phase1_execute_all_sequences == 1:
+                # execute all sequences, thus does not need to identify childrens in phase 1
+                return
 
             # specify the functions to be executed on each open states(world states)
             if self._iteration_ <=fdg.FDG_global.phase1_depth_limit and self._iteration_>1:
@@ -202,7 +202,7 @@ class FDG_pruner(LaserPlugin):
             # check the code coverage for each function
             if self._iteration_==fdg.FDG_global.phase1_depth_limit:
                 self.functionCoverage.compute_coverage()
-                self.functionCoverage.compute_deep_functions()
+
                 if fdg.FDG_global.phase2_include!=1:
                     # terminate
                     fdg.FDG_global.transaction_count = self._iteration_
@@ -210,9 +210,6 @@ class FDG_pruner(LaserPlugin):
                     return
 
             if self.flag_phase2_start:
-                # print(f' number of open_states: {len(laserEVM.open_states)}')
-                # print(f'length of the current sequence: {len(self.seqExeControl.sequence_cur_in_execution)}')
-                # print(f'current index: {self.seqExeControl.function_index}')
                 self.seqExeControl.end_exe_a_function()
 
             # signal to start sequence execution

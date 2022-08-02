@@ -1,4 +1,5 @@
 """This module contains the class used to represent disassembly code."""
+import fdg
 from mythril.ethereum import util
 from mythril.disassembler import asm
 from mythril.support.signatures import SignatureDB
@@ -30,7 +31,9 @@ class Disassembly(object):
         self.address_to_function_name = {}  # type: Dict[int, str]
         self.enable_online_lookup = enable_online_lookup
         self.assign_bytecode(bytecode=code)
-
+        # @wei print the total number of instructions for the target contract
+        if str(fdg.FDG_global.target_bytecode).__eq__(self.bytecode):
+            print(f'@@contract_total_instructions:{len(self.instruction_list)}')
     def assign_bytecode(self, bytecode):
         self.bytecode = bytecode
         # open from default locations
