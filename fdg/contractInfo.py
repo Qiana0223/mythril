@@ -9,7 +9,7 @@ class ContractInfo():
     def __init__(self,solidity_file:str, contract_name:str,method_identifiers:dict):
         self.solidity_file=solidity_file
         self.contract_name=contract_name.lstrip().rstrip()
-        self.methods_identifiers=method_identifiers
+        self.method_identifiers=method_identifiers
         self.slither_contract=Slither(self.solidity_file).get_contract_from_name(self.contract_name)
 
         self.function_info = {}

@@ -11,8 +11,8 @@ global phase1_depth_limit
 phase1_depth_limit=2
 
 
-global flag_phase2
-flag_phase2=1  # 1: means include phase 2; others: does not include phase 2;
+global phase2_include
+phase2_include=1  # 1: means include phase 2; others: does not include phase 2;
 
 
 

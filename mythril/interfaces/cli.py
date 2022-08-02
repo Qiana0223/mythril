@@ -463,8 +463,16 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
     )
 
     options.add_argument(
+        "-p1All",
+        "--phase1-execute-all-sequences",
+        type=int,
+        default=0,
+        help="1, execute all sequences in phase 1; others: execute sequences in an FDG.",
+    )
+
+    options.add_argument(
         "-p2",
-        "--flag-phase2",
+        "--phase2-include",
         type=int,
         default=1,
         help="indicate if phase 2 should be included.1: means yes; ohters mean no.",
@@ -745,9 +753,10 @@ def execute_command(
         #@wei
         fdg.FDG_global.function_coverage_threshold = args.function_coverage_threshold
         fdg.FDG_global.phase1_depth_limit = args.phase1_depth_limit
-        fdg.FDG_global.flag_phase2=args.flag_phase2
+        fdg.FDG_global.phase1_execute_all_sequences = args.phase1_execute_all_sequences
+        fdg.FDG_global.phase2_include=args.phase2_include
         fdg.FDG_global.seq_num_limit = args.sequence_number_limit
-        fdg.FDG_global.print_ftn_coverage=args.print_ftn_coverage
+        fdg.FDG_global.print_function_coverage=args.print_ftn_coverage
         fdg.FDG_global.sequences=args.sequences
 
 

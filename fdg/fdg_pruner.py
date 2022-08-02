@@ -125,10 +125,13 @@ class FDG_pruner(LaserPlugin):
             """
             self._iteration_ += 1
 
-            if self._iteration_==1:
-                self.instructionModification.feed_instructions(laserEVM,contract_address)
-                # self.save_cur_iteration_all_sequences=[[ftn_idx] for ftn_idx in self.contract_info.function_info.keys()-[0] ]
-                # self.save_cur_iteration_state_change_sequences=[]
+            if not self.flag_phase2_start:  # i.e. in phase 1
+                if self._iteration_ == 1:
+                    self.instructionModification.feed_instructions(laserEVM, contract_address)
+
+                if fdg.FDG_global.phase1_execute_all_sequences == 1:
+                    # execute all sequences, thus does not need to identify childrens in phase 1
+                    return
 
             # specify the functions to be executed on each open states(world states)
             if self._iteration_ <=fdg.FDG_global.phase1_depth_limit and self._iteration_>1:
@@ -204,7 +207,7 @@ class FDG_pruner(LaserPlugin):
             if self._iteration_==fdg.FDG_global.phase1_depth_limit:
                 self.functionCoverage.compute_coverage()
                 self.functionCoverage.compute_deep_functions()
-                if fdg.FDG_global.flag_phase2!=1:
+                if fdg.FDG_global.phase2_include!=1:
                     # terminate
                     fdg.FDG_global.transaction_count = self._iteration_
                     laserEVM.open_states = []

@@ -7,7 +7,7 @@ from typing import Dict, Tuple, List
 
 import logging
 import fdg.FDG_global
-
+import numpy as np
 log = logging.getLogger(__name__)
 
 
@@ -60,6 +60,8 @@ class InstructionCoveragePlugin(LaserPlugin):
                 print(f'#@coverage')
                 print("Achieved {:.2f}% coverage for code: {}".format(
                         cov_percentage, code))
+                if fdg.FDG_global.print_ftn_coverage==1:
+                    self.compute_and_print_function_coverage()
 
         @symbolic_vm.laser_hook("execute_state")
         def execute_state_hook(global_state: GlobalState):
@@ -109,3 +111,17 @@ class InstructionCoveragePlugin(LaserPlugin):
             return self.coverage[bytecode][index]
         except IndexError:
             return False
+
+    def compute_and_print_function_coverage(self):
+        print(f'#@function_coverage')
+        if fdg.FDG_global.target_bytecode in self.coverage.keys():
+            code_cov = self.coverage[fdg.FDG_global.target_bytecode]
+            # compute coverage for each function
+            instructions_cover_record = code_cov[1]
+            if len(instructions_cover_record) > 0:
+                instr_array = np.array(instructions_cover_record)
+                for ftn_name, instr_indices in fdg.FDG_global.ftns_instr_indices.items():
+                    status = instr_array[instr_indices]
+                    cov_instr = sum(status)
+                    cov = cov_instr / float(len(status)) * 100
+                    print("{:.2f}%: {}".format( cov, ftn_name))
