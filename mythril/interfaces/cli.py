@@ -489,7 +489,7 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
 
     options.add_argument(
         "-p",
-        "--print-ftn-coverage",
+        "--print-function-coverage",
         type=int,
         default=0,
         help="0: no; 1:print function coverage",
@@ -756,7 +756,7 @@ def execute_command(
         fdg.FDG_global.phase1_execute_all_sequences = args.phase1_execute_all_sequences
         fdg.FDG_global.phase2_include=args.phase2_include
         fdg.FDG_global.seq_num_limit = args.sequence_number_limit
-        fdg.FDG_global.print_function_coverage=args.print_ftn_coverage
+        fdg.FDG_global.print_function_coverage=args.print_function_coverage
         fdg.FDG_global.sequences=args.sequences
 
 

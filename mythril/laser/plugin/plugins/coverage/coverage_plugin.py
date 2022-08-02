@@ -60,8 +60,8 @@ class InstructionCoveragePlugin(LaserPlugin):
                 print(f'#@coverage')
                 print("Achieved {:.2f}% coverage for code: {}".format(
                         cov_percentage, code))
-                if fdg.FDG_global.print_ftn_coverage==1:
-                    self.compute_and_print_function_coverage()
+            if fdg.FDG_global.print_function_coverage==1:
+                self.compute_and_print_function_coverage()
 
         @symbolic_vm.laser_hook("execute_state")
         def execute_state_hook(global_state: GlobalState):

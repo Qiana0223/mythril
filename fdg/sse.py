@@ -169,7 +169,7 @@ class sse(LaserPlugin):
                     self.ftn_instructions_coverage_info[ftn] = [cov, status]
 
 
-            if fdg.FDG_global.print_ftn_coverage == 1:
+            if fdg.FDG_global.print_function_coverage == 1:
                 print(f'End of symbolic execution')
                 for ftn, ftn_cov in self.ftn_instructions_coverage_info.items():
                     print("{:.2f}% coverage for {}".format(ftn_cov[0], ftn))

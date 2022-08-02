@@ -98,13 +98,9 @@ class FDG_pruner(LaserPlugin):
             deep_functions_1st_time = self.functionCoverage.get_deep_functions_1st_time()
             if len(deep_functions_1st_time) > 0:
                 print(f'@@WEI:go_through_sequence_generation')
-            # print(f'@@total_instruction:{len(self.instructionModification.instruction_list)}')
 
-            if fdg.FDG_global.print_ftn_coverage != 1: return
+            if fdg.FDG_global.print_function_coverage != 1: return
 
-            self.functionCoverage.compute_coverage()
-            for ftn, ftn_cov in self.functionCoverage.get_function_coverage().items():
-                print("{:.2f}% coverage for {}".format(ftn_cov, ftn))
             if len(deep_functions_1st_time)>0:
                 deep_function_in_the_end=self.functionCoverage.compute_deep_functions()
                 print(f'deep functions: {len(deep_functions_1st_time)-len(deep_function_in_the_end)} out of {len(deep_functions_1st_time)} is(are) meaningfully executed.')
