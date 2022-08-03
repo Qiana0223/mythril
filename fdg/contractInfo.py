@@ -19,7 +19,7 @@ class ContractInfo():
         self.ftnPureName_to_ftnFullName={}
 
         self._get_state_variable_info()
-        self._get_user_callable_function_info()
+        self._get_user_callable_function_info_1()
 
         self.fdg_parents={}
 
@@ -81,6 +81,49 @@ class ContractInfo():
 
         self.function_info[0]= {"name": "constructor()", "write_sv": [], "read_sv": [], "read_sv_condition": [],
                     "selector": "None"}
+        self.ftn_to_idx['constructor()'] = 0
+
+    def _get_user_callable_function_info_1(self):
+        ftn_idx = 2  # 0: constructor; 1: fallback
+        functions_considered = []
+        temp = 0
+        for f in self.slither_contract.all_functions_called:
+            if f.name.__eq__('slitherConstructorVariables'): continue
+            if f.name.__eq__('slitherConstructorConstantVariables'): continue
+
+            if f.name.__eq__(self.contract_name): continue
+            if f.is_constructor: continue
+
+            # only consider public, external functions
+            summary = f.get_summary()
+            if len(summary) >= 3:
+                if summary[2] not in ['public', 'external']:
+                    continue
+            # do not use the full_name obtained from Slither as it does not match the full name ocassionally in Mythril)
+            if f.full_name not in functions_considered:
+                functions_considered.append(f.full_name)
+                f_info = self._get_a_function_info(f)
+                if f.name.__eq__("fallback"):
+                    temp = ftn_idx
+                    ftn_idx = 1
+                self.function_info[ftn_idx] = f_info
+                self.ftn_to_idx[f_info['name']] = ftn_idx
+                self.ftn_to_selector[f_info['name']] = f_info["selector"]
+                self.ftnPureName_to_ftnFullName[f.name] = f_info['name']
+
+                if f.name.__eq__("fallback"):
+                    ftn_idx = temp
+                else:
+                    ftn_idx += 1
+
+        if 1 not in self.function_info.keys():  #
+            self.function_info[1] = {"name": "fallback()", "write_sv": [], "read_sv": [], "read_sv_condition": [],
+                                     "selector": "None"}
+            self.ftn_to_idx['fallback()'] = 1
+            self.ftnPureName_to_ftnFullName["fallback"] = "fallback()"
+
+        self.function_info[0] = {"name": "constructor()", "write_sv": [], "read_sv": [], "read_sv_condition": [],
+                                 "selector": "None"}
         self.ftn_to_idx['constructor()'] = 0
 
     def get_index_from_name(self, ftn_name:str):

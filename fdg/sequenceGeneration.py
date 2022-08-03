@@ -22,7 +22,7 @@ class SequenceGeneration():
             else:
                 return sequences_paper
 
-    def parent_sequences_write_one_SV(self, ftn_idx:int,parent_list:list,n:int,min_length:int)->list:
+    def parent_sequences_write_one_SV(self, ftn_idx: int, parent_list: list, n: int, min_length: int) -> list:
         """
         get at most n parent sequences that write one SV and have length >= min_length
         :param parent_list: the parents to be considered
@@ -31,24 +31,30 @@ class SequenceGeneration():
         :return:
         """
 
-        parent_has_state_changing_sequences=[ prt for prt in parent_list if self.sequenceAndState.has_state_changing_sequences_length(prt,min_length)]
-        if n==-1:
+        parent_has_state_changing_sequences = [prt for prt in parent_list if
+                                               self.sequenceAndState.has_state_changing_sequences_length(prt,
+                                                                                                         min_length)]
+        if n == -1:
             # get all state-changing sequences with length >= min_length
             sequences = self.sequenceAndState.get_all_state_changing_sequeces_length(
                 parent_has_state_changing_sequences, self.phase1_depth)
-            return [seq + [ftn_idx] for seq in sequences]
-        if len(parent_has_state_changing_sequences)>n:
+        elif len(parent_has_state_changing_sequences) > n:
             # randomly select n
-            sequences=self.sequenceAndState.get_shortest_state_changing_sequeces_length(parent_has_state_changing_sequences,self.phase1_depth)
-            sequences_selected=utils.random_select(sequences, n)
-            return [seq+[ftn_idx] for seq in sequences_selected]
+            sequences = self.sequenceAndState.get_shortest_state_changing_sequeces_length(
+                parent_has_state_changing_sequences, self.phase1_depth)
+
         else:
             # get all state-changing sequences with length >= min_length
-            sequences=self.sequenceAndState.get_all_state_changing_sequeces_length(parent_has_state_changing_sequences,self.phase1_depth)
+            sequences = self.sequenceAndState.get_all_state_changing_sequeces_length(
+                parent_has_state_changing_sequences, self.phase1_depth)
 
+        if len(sequences) > n and n > 0:
             sequences_selected = utils.random_select(sequences, n)
-            return [seq + [ftn_idx] for seq in sequences_selected]
+            return [seq + [ftn_idx] for seq in sequences_selected if ftn_idx not in seq]
+        else:
+            return [seq + [ftn_idx] for seq in sequences if ftn_idx not in seq]
 
+   
     def _get_a_topological_sequence(self,ftn_idx:int, sequences:list)->list:
         """
         get a topological sequence from multiple sequences;
