@@ -112,6 +112,7 @@ class SequenceAndState():
         """
         sequences=[]
         for prt in prt_list:
+            if prt not in self.sequence_changing_state_dict.keys():continue
             for seq in self.sequence_changing_state_dict[prt]:
                 if len(seq)>=min_length:
                     if seq not in sequences:
@@ -128,19 +129,24 @@ class SequenceAndState():
         """
         sequences=[]
         for prt in prt_list:
-            seq_list=list(self.sequence_changing_state_dict[prt])
-            seq_list.sort(key=len)
-            for seq in seq_list:
-                if len(seq)>=min_length:
-                    if seq not in sequences:
-                        sequences.append(seq)
-                        break
+            if prt in self.sequence_changing_state_dict.keys():
+                seq_list=list(self.sequence_changing_state_dict[prt])
+                seq_list.sort(key=len)
+                for seq in seq_list:
+                    if len(seq)>=min_length:
+                        if seq not in sequences:
+                            sequences.append(seq)
+                            break
         return sequences
 
     def get_state_changing_sequences(self,ftn_idx:int)->list:
+        if ftn_idx not in self.sequence_changing_state_dict.keys():
+            return []
         return self.sequence_changing_state_dict[ftn_idx]
 
     def get_n_state_changing_sequences_for_a_parent(self, ftn_idx:int, specified_num:int)->list:
+        if ftn_idx not in self.sequence_changing_state_dict.keys():
+            return []
         sequnces=self.sequence_changing_state_dict[ftn_idx]
         sequnces.sort(key=len)
         if len(sequnces)>specified_num:
@@ -212,6 +218,13 @@ class SequenceAndState():
                 return True
         return False
 
+    def find_sequences_by_length(self,length:int)->list:
+        sequences=[]
+        for values in self.sequence_changing_state_dict.values():
+            for seq in values:
+                if len(seq)==length:
+                    sequences.append(seq)
+        return sequences
 
 
 

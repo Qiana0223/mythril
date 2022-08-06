@@ -12,7 +12,7 @@ class SequenceGeneration():
         self.phase1_depth=phase1_depth
 
     def generate_sequences(self,ftn_idx)->list:
-        sequences_paper = self.generate_sequences_paper(ftn_idx)
+        sequences_paper = self.generate_sequences_paper_3(ftn_idx)
         sequences_paper.sort(key=len)
         if fdg.FDG_global.seq_num_limit==0: # no limit on the number of sequences
             return sequences_paper
@@ -192,4 +192,164 @@ class SequenceGeneration():
 
         return generated_sequences
 
+    def generate_sequences_paper_1(self, ftn_idx: int) -> list:
+        """
+        get parent combinations
+        one combination-> one sequence
+        generate sequences for functions that have no parents
+        :param ftn_idx:
+        :return:
+        """
+        sv_parents = self.FDG.get_parents(ftn_idx)
+        if len(sv_parents) == 0:
+            return self.generate_sequences_for_functions_without_parents(ftn_idx)
+
+        sv_list = list(sv_parents.keys())
+        # sv_list =[2,3,4]
+        generated_sequences = []  # to save the  generated sequences
+        sv_combs = []
+        for length in range(1, len(sv_list) + 1):
+            sv_combs += utils.get_combination_for_a_list(sv_list, length)
+        for sv_comb in sv_combs:
+            if len(sv_comb) == 1:
+                if isinstance(sv_parents, dict):
+                    sequences = self.parent_sequences_write_one_SV(ftn_idx, sv_parents[sv_comb[0]], -1,
+                                                                   self.phase1_depth)
+                    for seq in sequences:
+                        if seq not in generated_sequences:
+                            generated_sequences.append(seq)
+                else:
+                    assert False, "data type error"
+                continue
+
+            # replace each sv with the corresponding parents
+            sv_comb_parents = [sv_parents[sv] for sv in sv_comb]
+            parent_combs = utils.get_combination(sv_comb_parents, len(sv_comb))
+            for parent_comb in parent_combs:
+                parent_sequence_list = []
+                flag_comb = True
+                for parent in parent_comb:
+                    parent_seq = self.sequenceAndState.get_n_shortest_state_changing_sequences_for_a_function(parent, 1)
+                    if len(parent_seq) == 0:
+                        flag_comb = False
+                        break  # if thre is one parent that does not have a parent sequence, ignore this parent combination
+                    parent_sequence_list.append(parent_seq[0])
+                if flag_comb:
+                    generate_seq = self._get_a_topological_sequence(ftn_idx, parent_sequence_list)
+                    if generate_seq not in generated_sequences:
+                        generated_sequences.append(generate_seq)
+
+        return generated_sequences
+
+    def generate_sequences_paper_2(self, ftn_idx: int) -> list:
+        """
+        get parent combinations
+        one combination-> multiple sequences
+
+        :param ftn_idx:
+        :return:
+        """
+        sv_parents = self.FDG.get_parents(ftn_idx)
+        if len(sv_parents) == 0: return []
+
+        sv_list = list(sv_parents.keys())
+        # sv_list =[2,3,4]
+        generated_sequences = []  # to save the  generated sequences
+        sv_combs = []
+        for length in range(1, len(sv_list) + 1):
+            sv_combs += utils.get_combination_for_a_list(sv_list, length)
+        for sv_comb in sv_combs:
+            if len(sv_comb) == 1:
+                if isinstance(sv_parents, dict):
+                    sequences = self.parent_sequences_write_one_SV(ftn_idx, sv_parents[sv_comb[0]], -1,
+                                                                   self.phase1_depth)
+                    for seq in sequences:
+                        if seq not in generated_sequences:
+                            generated_sequences.append(seq)
+                else:
+                    assert False, "data type error"
+                continue
+
+            # replace each sv with the corresponding parents
+            sv_comb_parents = [sv_parents[sv] for sv in sv_comb]
+            parent_combs = utils.get_combination(sv_comb_parents, len(sv_comb))
+            for parent_comb in parent_combs:
+                parent_comb = list(set(parent_comb))
+                if len(parent_comb) < len(sv_comb): continue  # when a parent occurs more than once
+                prt_seq_list = [self.sequenceAndState.get_state_changing_sequences(prt_idx) for prt_idx in parent_comb]
+                # get parent sequence combination
+                prt_seq_len_list = [list(range(len(prt_seq))) for prt_seq in prt_seq_list]
+                prt_seq_idx_combs = utils.get_combination(prt_seq_len_list, len(sv_comb))
+                for prt_seq_idx_comb in prt_seq_idx_combs:
+                    # get parent sequence list
+                    parent_seq_list = [prt_seq_list[prt_idx][prt_seq_idx] for prt_idx, prt_seq_idx in
+                                       enumerate(prt_seq_idx_comb)]
+                    # merge parent sequences in the parent sequence list
+                    generate_seq = self._get_a_topological_sequence(ftn_idx, parent_seq_list)
+                    if generate_seq not in generated_sequences:
+                        generated_sequences.append(generate_seq)
+
+        return generated_sequences
+
+    def generate_sequences_paper_3(self, ftn_idx: int) -> list:
+        """
+        get parent combinations
+        one combination-> multiple sequences
+        generate sequences for functions that have no parents
+        :param ftn_idx:
+        :return:
+        """
+        sv_parents = self.FDG.get_parents(ftn_idx)
+        if len(sv_parents) == 0:
+            return self.generate_sequences_for_functions_without_parents(ftn_idx)
+
+        sv_list = list(sv_parents.keys())
+        # sv_list =[2,3,4]
+        generated_sequences = []  # to save the  generated sequences
+        sv_combs = []
+        for length in range(1, len(sv_list) + 1):
+            sv_combs += utils.get_combination_for_a_list(sv_list, length)
+        for sv_comb in sv_combs:
+            if len(sv_comb) == 1:
+                if isinstance(sv_parents, dict):
+                    sequences = self.parent_sequences_write_one_SV(ftn_idx, sv_parents[sv_comb[0]], -1,
+                                                                   self.phase1_depth)
+                    for seq in sequences:
+                        if seq not in generated_sequences:
+                            generated_sequences.append(seq)
+                else:
+                    assert False, "data type error"
+                continue
+
+            # replace each sv with the corresponding parents
+            sv_comb_parents = [sv_parents[sv] for sv in sv_comb]
+            parent_combs = utils.get_combination(sv_comb_parents, len(sv_comb))
+            for parent_comb in parent_combs:
+                parent_comb = list(set(parent_comb))
+                if len(parent_comb) < len(sv_comb): continue  # when a parent occurs more than once
+                prt_seq_list = [self.sequenceAndState.get_state_changing_sequences(prt_idx) for prt_idx in parent_comb]
+                # get parent sequence combination
+                prt_seq_len_list = [list(range(len(prt_seq))) for prt_seq in prt_seq_list]
+                prt_seq_idx_combs = utils.get_combination(prt_seq_len_list, len(sv_comb))
+                for prt_seq_idx_comb in prt_seq_idx_combs:
+                    # get parent sequence list
+                    parent_seq_list = [prt_seq_list[prt_idx][prt_seq_idx] for prt_idx, prt_seq_idx in
+                                       enumerate(prt_seq_idx_comb)]
+                    # merge parent sequences in the parent sequence list
+                    generate_seq = self._get_a_topological_sequence(ftn_idx, parent_seq_list)
+                    if generate_seq not in generated_sequences:
+                        generated_sequences.append(generate_seq)
+
+        return generated_sequences
+
+    def generate_sequences_for_functions_without_parents(self, ftn_idx: int):
+        """
+        on states that are generated at the depth 1
+        :return:
+        """
+        sequences = []
+        for length in range(1, fdg.FDG_global.phase1_depth_limit + 1):
+            sequences += self.sequenceAndState.find_sequences_by_length(length)
+
+        return [seq + [ftn_idx] for seq in sequences]
 

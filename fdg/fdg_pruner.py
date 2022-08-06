@@ -80,7 +80,7 @@ class FDG_pruner(LaserPlugin):
             self.functionCoverage.set_index_to_ftn_pure_name(self.contract_info.ftn_to_idx)
 
             # create an FDG
-            self.FDG=FDG(self.contract_info)
+            self.FDG=FDG(self.contract_info,level_phase2=0)
 
             # for saving the generated states and executed sequences
             self.sequenceAndState=SequenceAndState(self.contract_info,self.functionCoverage)
