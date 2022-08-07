@@ -80,7 +80,7 @@ class FDG_pruner(LaserPlugin):
             self.functionCoverage.set_index_to_ftn_pure_name(self.contract_info.ftn_to_idx)
 
             # create an FDG
-            self.FDG=FDG(self.contract_info,level_phase2=0)
+            self.FDG=FDG(self.contract_info,level_phase1=fdg.FDG_global.level_phase1,level_phase2=fdg.FDG_global.level_phase2)
 
             # for saving the generated states and executed sequences
             self.sequenceAndState=SequenceAndState(self.contract_info,self.functionCoverage)
@@ -145,7 +145,7 @@ class FDG_pruner(LaserPlugin):
                     children=[]
                     if not isinstance(ftn_idx_seq[-1],int): #means functions of state variables #to-do-list
                         sv=str(ftn_idx_seq[-1]).split("(")[0]
-                        children=self.FDG.get_ftn_read_SV(sv,0) # in phase 1, so, the level is 0 by default
+                        children=self.FDG.get_ftn_read_SV(sv,fdg.FDG_global.level_phase1) # in phase 1, so, the level is 0 by default
                     else:
                         children = self.FDG.get_children(ftn_idx_seq[-1])
                     if len(children)>0:

@@ -450,7 +450,7 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
         "-snl",
         "--sequence-number-limit",
         type=int,
-        default=0,
+        default=-1,
         help="limit the number of seqeunces generated for each parent sequence list.",
     )
     #@wei
@@ -487,6 +487,35 @@ def create_analyzer_parser(analyzer_parser: ArgumentParser):
 
     )
 
+    #@wei
+    options.add_argument(
+        "-sm",
+        "--sequence-method-indicator",
+        type=int,
+        default=0,
+        help="indicate the method that is used to generate sequences",
+
+    )
+    #@wei
+    options.add_argument(
+        "-sv1",
+        "--state-variable-phase1",
+        type=int,
+        default=0,
+
+        help="only consider the state variables read in conditions. 0: no, 1:yes",
+
+    )
+    #@wei
+    options.add_argument(
+        "-sv2",
+        "--state-variable-phase2",
+        type=int,
+        default=1,
+
+        help="only consider the state variables read in conditions.0:no, 1:yes",
+
+    )
     options.add_argument(
         "-p",
         "--print-function-coverage",
@@ -758,7 +787,9 @@ def execute_command(
         fdg.FDG_global.seq_num_limit = args.sequence_number_limit
         fdg.FDG_global.print_function_coverage=args.print_function_coverage
         fdg.FDG_global.sequences=args.sequences
-
+        fdg.FDG_global.level_phase1= args.state_variable_phase1
+        fdg.FDG_global.level_phase2 = args.state_variable_phase2
+        fdg.FDG_global.phase2_method_select=args.sequence_method_indicator
 
 
         analyzer = MythrilAnalyzer(

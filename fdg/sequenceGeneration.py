@@ -12,9 +12,17 @@ class SequenceGeneration():
         self.phase1_depth=phase1_depth
 
     def generate_sequences(self,ftn_idx)->list:
-        sequences_paper = self.generate_sequences_paper_3(ftn_idx)
+        if fdg.FDG_global.phase2_method_select==0:
+            sequences_paper = self.generate_sequences_paper(ftn_idx)
+        elif fdg.FDG_global.phase2_method_select==1:
+            sequences_paper = self.generate_sequences_paper_1(ftn_idx)
+        elif fdg.FDG_global.phase2_method_select==2:
+            sequences_paper = self.generate_sequences_paper_2(ftn_idx)
+        elif fdg.FDG_global.phase2_method_select==3:
+            sequences_paper = self.generate_sequences_paper_3(ftn_idx)
         sequences_paper.sort(key=len)
-        if fdg.FDG_global.seq_num_limit==0: # no limit on the number of sequences
+
+        if fdg.FDG_global.seq_num_limit==-1: # no limit on the number of sequences
             return sequences_paper
         else:
             if len(sequences_paper)>fdg.FDG_global.seq_num_limit:
@@ -177,6 +185,8 @@ class SequenceGeneration():
             sv_comb_parents=[sv_parents[sv] for sv in sv_comb]
             parent_combs=utils.get_combination(sv_comb_parents,len(sv_comb))
             for parent_comb in parent_combs:
+                parent_comb=list(set(parent_comb))
+                if len(parent_comb)<len(sv_comb):continue
                 parent_sequence_list=[]
                 flag_comb=True
                 for parent in parent_comb:
@@ -226,6 +236,8 @@ class SequenceGeneration():
             sv_comb_parents = [sv_parents[sv] for sv in sv_comb]
             parent_combs = utils.get_combination(sv_comb_parents, len(sv_comb))
             for parent_comb in parent_combs:
+                parent_comb=list(set(parent_comb))
+                if len(parent_comb)<len(sv_comb):continue
                 parent_sequence_list = []
                 flag_comb = True
                 for parent in parent_comb:

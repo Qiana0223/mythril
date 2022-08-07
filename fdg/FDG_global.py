@@ -14,9 +14,9 @@ phase1_depth_limit=2
 global phase2_include
 phase2_include=1  # 1: means include phase 2; others: does not include phase 2;
 
+phase2_method_select=0 #0: p(), 1:p_1(), 2: p_2(),3:p_3()
 
-
-seq_num_limit=0
+seq_num_limit=-1 # no limit
 
 
 
@@ -67,10 +67,12 @@ sequences=''
 # others: primitive state variables in conditions
 global sv_level
 sv_level=1
-
+level_phase1=0
+level_phase2=1
 
 global primitive_index
 primitive_index=2
 
 global non_primitive_index
 non_primitive_index=1
+

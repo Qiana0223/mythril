@@ -93,7 +93,7 @@ class ContractInfo():
 
             if f.name.__eq__(self.contract_name): continue
             if f.is_constructor: continue
-
+            if f.view:continue
             # only consider public, external functions
             summary = f.get_summary()
             if len(summary) >= 3:
@@ -101,6 +101,7 @@ class ContractInfo():
                     continue
             # do not use the full_name obtained from Slither as it does not match the full name ocassionally in Mythril)
             if f.full_name not in functions_considered:
+
                 functions_considered.append(f.full_name)
                 f_info = self._get_a_function_info(f)
                 if f.name.__eq__("fallback"):
