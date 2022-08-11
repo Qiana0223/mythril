@@ -1,3 +1,4 @@
+import fdg
 from fdg.FunctionCoverage import FunctionCoverage
 from fdg.sequenceAndState import SequenceAndState
 
@@ -23,7 +24,7 @@ class SequenceExecutionControl():
         assert len(generated_sequences)>0
         self.deep_function=deep_function_idx
         self.flag_to_generate_sequences = False
-        self.generated_sequences=generated_sequences
+        self.generated_sequences = [seq for seq in generated_sequences if len(seq) <= fdg.FDG_global.seq_num_limit]
         self.sequence_index=0
         self.function_index=0
         self.sequence_cur_in_execution=self.generated_sequences[self.sequence_index]

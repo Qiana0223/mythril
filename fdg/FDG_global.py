@@ -25,7 +25,7 @@ print_function_coverage=0
 
 # control the number of symbolic transactions issued by LaserEVM
 global transaction_count
-transaction_count=50
+transaction_count=100
 
 # provide them to FDG_pruner for FDG building
 global solidity_path
