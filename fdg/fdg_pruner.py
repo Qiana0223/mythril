@@ -100,15 +100,15 @@ class FDG_pruner(LaserPlugin):
             if len(deep_functions_1st_time) > 0:
                 print(f'@@WEI:go_through_sequence_generation')
 
-            if fdg.FDG_global.print_function_coverage != 1: return
-
-            if len(deep_functions_1st_time)>0:
-                deep_function_in_the_end=self.functionCoverage.compute_deep_functions()
-                print(f'deep functions: {len(deep_functions_1st_time)-len(deep_function_in_the_end)} out of {len(deep_functions_1st_time)} is(are) meaningfully executed.')
-                print(f'all deep function(s): {deep_functions_1st_time}')
-                print(f'left deep function(s): {deep_function_in_the_end}')
-                for idx in range(2, len(self.contract_info.function_info.keys())):
-                    print(f'{idx}: {self.contract_info.get_name_from_index(idx)}')
+            # if fdg.FDG_global.print_function_coverage != 1: return
+            #
+            # if len(deep_functions_1st_time)>0:
+            #     deep_function_in_the_end=self.functionCoverage.compute_deep_functions()
+            #     print(f'deep functions: {len(deep_functions_1st_time)-len(deep_function_in_the_end)} out of {len(deep_functions_1st_time)} is(are) adequately executed.')
+            #     print(f'all deep function(s): {deep_functions_1st_time}')
+            #     print(f'left deep function(s): {deep_function_in_the_end}')
+            #     for idx in range(2, len(self.contract_info.function_info.keys())):
+            #         print(f'{idx}: {self.contract_info.get_name_from_index(idx)}')
 
 
         @symbolic_vm.laser_hook("start_sym_trans_laserEVM")
@@ -185,19 +185,6 @@ class FDG_pruner(LaserPlugin):
             for state in laserEVM.open_states:
                 ftn_seq=self.sequenceAndState.save_state_and_its_sequence(state)
                 # self.save_cur_iteration_state_change_sequences.append(ftn_seq)
-
-
-            # # save non-state-changing sequences
-            # self.sequenceAndState.save_sequences_not_changing_states(self.save_cur_iteration_all_sequences,
-            #                                              self.save_cur_iteration_state_change_sequences)
-
-            # # empty saved sequences
-            # print(f'cur_all sequence(s):{self.save_cur_iteration_all_sequences}')
-            # self._print_sequences(self.save_cur_iteration_all_sequences)
-            # print(f'cur_state_change sequence(s):{self.save_cur_iteration_state_change_sequences}')
-            # self._print_sequences(self.save_cur_iteration_state_change_sequences)
-            # self.save_cur_iteration_all_sequences = []
-            # self.save_cur_iteration_state_change_sequences=[]
 
             # check the code coverage for each function
             if self._iteration_==fdg.FDG_global.phase1_depth_limit:

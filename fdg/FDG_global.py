@@ -17,7 +17,7 @@ phase2_include=1  # 1: means include phase 2; others: does not include phase 2;
 phase2_method_select=0 #0: p(), 1:p_1(), 2: p_2(),3:p_3()
 
 seq_num_limit=-1 # no limit
-
+seq_len_limit=5
 
 
 global print_function_coverage

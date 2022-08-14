@@ -44,7 +44,8 @@ class CommandLineToolTestCase(BaseTestCase):
     def test_analyze(self):
         solidity_file = str(TESTDATA / "input_contracts" / "origin.sol")
         command = "python3 {} analyze {} --solv 0.5.0".format(MYTH, solidity_file)
-        self.assertIn("115", output_of(command))
+        output=output_of(command)
+        self.assertIn("115", output)
 
     def test_analyze_bytecode(self):
         solidity_file = str(TESTDATA / "inputs" / "origin.sol.o")
