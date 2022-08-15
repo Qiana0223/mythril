@@ -58,12 +58,12 @@ class SequenceGeneration():
 
         if len(sequences) > n and n > 0:
             sequences_selected = utils.random_select(sequences, n)
-            return [seq + [ftn_idx] for seq in sequences_selected if ftn_idx not in seq]
-        else:
-            return [seq + [ftn_idx] for seq in sequences if ftn_idx not in seq]
+            return [seq + [ftn_idx] for seq in sequences_selected]
+        else:#changed
+            return [seq + [ftn_idx] for seq in sequences]
 
    
-    def _get_a_topological_sequence(self,ftn_idx:int, sequences:list)->list:
+    def _get_a_topological_sequence_0(self,ftn_idx:int, sequences:list)->list:
         """
         get a topological sequence from multiple sequences;
         start with the constructor;
@@ -153,6 +153,122 @@ class SequenceGeneration():
                 topologicalSortUtil(graph,i, visited, stack)
         return stack[1:]  # remove the first element: constructor
 
+    def _get_a_topological_sequence(self, ftn_idx: int, sequences: list) -> list:
+        """
+        get a topological sequence from multiple sequences;
+        start with the constructor;
+        end with the target function (ftn_idx);
+
+        based on function indices
+        :param sequences:
+        :return: a sequence, each element is an index
+        """
+
+        def get_graph(sequences: list, ftn_idx: int) -> dict:
+            """
+            build a graph starting with the constructor and ending with self.ftn_idx
+            :param sequences:
+            :return:
+            """
+            graph = {}
+            graph[0] = []
+            graph[ftn_idx] = []
+            for seq in sequences:
+                if len(seq) == 0: continue
+                if len(seq) == 1:
+                    if seq[0] not in graph[0]:  # connect the start node with the first node of the sequence
+                        graph[0].append(seq[0])
+                    if seq[0] not in graph.keys():  # connect the node with target node
+                        graph[seq[0]] = [ftn_idx]
+                    else:
+                        if ftn_idx not in graph[seq[0]]:
+                            graph[seq[0]] += [ftn_idx]
+                else:
+                    ftn_start = seq[0]
+                    # add the edge between the constructor to the first function in the sequence
+                    if ftn_start not in graph[0]:
+                        graph[0].append(ftn_start)
+
+                    # add the edge based on the sequence, each consecutive two functions has an edge
+                    for ftn in seq[1:]:
+                        if ftn_start not in graph.keys():
+                            graph[ftn_start] = [ftn]
+                        else:
+                            if ftn not in graph[ftn_start]:
+                                graph[ftn_start] += [ftn]
+                        ftn_start = ftn
+
+                    # add the edge between the last function in the sequence and the target function
+                    assert (ftn_start == seq[-1])
+                    if ftn_start not in graph.keys():
+                        graph[ftn_start] = [ftn_idx]
+                    else:
+                        if ftn_idx not in graph[ftn_start]:
+                            graph[ftn_start] += [ftn_idx]
+            return graph
+
+        # A recursive function used by topologicalSort
+        def topologicalSortUtil(graph: dict, v, visited: dict, stack):
+            # Mark the current node as visited.
+            visited[v] = True
+            # Recur for all the vertices adjacent to this vertex
+            for i in graph[v]:
+                if visited[i] == False:
+                    topologicalSortUtil(graph, i, visited, stack)
+            # Push current vertex to stack which stores result
+            stack.insert(0, v)
+
+        # compute the number of nodes
+        all_nodes = []
+        sequences_check = []
+        flag_cycle = False
+        mark = str(ftn_idx) + "_"
+        for seq in sequences:
+            seq_ = []
+            for node in seq:
+                if node == ftn_idx:
+                    flag_cycle = True
+                    node_ = mark
+                else:
+                    node_ = node
+                seq_.append(node_)
+                if node_ not in all_nodes:
+                    all_nodes.append(node_)
+
+            sequences_check.append(seq_)
+
+        all_nodes += [0, ftn_idx]
+        num_nodes = len(all_nodes)
+
+        # build the graph
+        graph = get_graph(sequences_check, ftn_idx)
+
+        # get the path
+        # Mark all the vertices as not visited
+        visited = {}
+        for node_idx in all_nodes:
+            visited[node_idx] = False
+
+        keys = list(visited.keys())
+
+        stack = []
+        # Call the recursive helper function to store Topological
+        # Sort starting from all vertices one by one
+        for i in visited.keys():
+            if visited[i] == False:
+                topologicalSortUtil(graph, i, visited, stack)
+        final_seq = []
+        if flag_cycle:
+            for item in stack[1:]:
+                if str(item).__eq__(mark):
+                    final_seq.append(ftn_idx)
+                else:
+                    final_seq.append(item)
+        else:
+            final_seq = stack[1:]  # remove the first element: constructor(0)
+
+        return final_seq
+
     def generate_sequences_paper(self,ftn_idx:int)->list:
         """
         get parent combinations
@@ -162,7 +278,8 @@ class SequenceGeneration():
         """
         sv_parents = self.FDG.get_parents(ftn_idx)
         if len(sv_parents) == 0: return []
-
+        if ftn_idx==3:
+            print(f'xxx')
         sv_list=list(sv_parents.keys())
         # sv_list =[2,3,4]
         generated_sequences=[] # to save the  generated sequences
@@ -365,3 +482,121 @@ class SequenceGeneration():
 
         return [seq + [ftn_idx] for seq in sequences]
 
+def get_a_topological_sequence(ftn_idx:int, sequences:list)->list:
+    """
+    get a topological sequence from multiple sequences;
+    start with the constructor;
+    end with the target function (ftn_idx);
+
+    based on function indices
+    :param sequences:
+    :return: a sequence, each element is an index
+    """
+    def get_graph(sequences: list,ftn_idx:int)->dict:
+        """
+        build a graph starting with the constructor and ending with self.ftn_idx
+        :param sequences:
+        :return:
+        """
+        graph = {}
+        graph[0] = []
+        graph[ftn_idx]=[]
+        for seq in sequences:
+            if len(seq)==0:continue
+            if len(seq) == 1:
+                if seq[0] not in graph[0]: # connect the start node with the first node of the sequence
+                    graph[0].append(seq[0])
+                if seq[0] not in graph.keys(): # connect the node with target node
+                    graph[seq[0]] = [ftn_idx]
+                else:
+                    if ftn_idx not in graph[seq[0]]:
+                        graph[seq[0]] += [ftn_idx]
+            else:
+                ftn_start = seq[0]
+                # add the edge between the constructor to the first function in the sequence
+                if ftn_start not in graph[0]:
+                    graph[0].append(ftn_start)
+
+                # add the edge based on the sequence, each consecutive two functions has an edge
+                for ftn in seq[1:]:
+                    if ftn_start not in graph.keys():
+                        graph[ftn_start] = [ftn]
+                    else:
+                        if ftn not in graph[ftn_start]:
+                            graph[ftn_start] += [ftn]
+                    ftn_start = ftn
+
+                # add the edge between the last function in the sequence and the target function
+                assert (ftn_start == seq[-1])
+                if ftn_start not in graph.keys():
+                    graph[ftn_start] = [ftn_idx]
+                else:
+                    if ftn_idx not in graph[ftn_start]:
+                        graph[ftn_start] += [ftn_idx]
+        return graph
+
+    # A recursive function used by topologicalSort
+    def topologicalSortUtil(graph:dict,v,visited:dict, stack):
+        # Mark the current node as visited.
+        visited[v] = True
+        # Recur for all the vertices adjacent to this vertex
+        for i in graph[v]:
+            if visited[i] == False:
+                topologicalSortUtil(graph,i, visited, stack)
+        # Push current vertex to stack which stores result
+        stack.insert(0, v)
+
+    # compute the number of nodes
+    all_nodes=[]
+    sequences_check=[]
+    flag_cycle=False
+    mark=str(ftn_idx)+"_"
+    for seq in sequences:
+        seq_=[]
+        for node in seq:
+            if node ==ftn_idx:
+                flag_cycle=True
+                node_=mark
+            else:
+                node_=node
+            seq_.append(node_)
+            if node_ not in all_nodes:
+                all_nodes.append(node_)
+
+        sequences_check.append(seq_)
+
+    all_nodes+=[0,ftn_idx]
+    num_nodes=len(all_nodes)
+
+    # build the graph
+    graph=get_graph(sequences_check,ftn_idx)
+
+    # get the path
+    # Mark all the vertices as not visited
+    visited={}
+    for node_idx in all_nodes:
+        visited[node_idx]=False
+
+    keys=list(visited.keys())
+
+    stack = []
+    # Call the recursive helper function to store Topological
+    # Sort starting from all vertices one by one
+    for i in visited.keys():
+        if visited[i] == False:
+            topologicalSortUtil(graph,i, visited, stack)
+    final_seq=[]
+    if flag_cycle:
+        for item in stack[1:]:
+            if str(item).__eq__(mark):
+                final_seq.append(ftn_idx)
+            else:
+                final_seq.append(item)
+    else:
+        final_seq=stack[1:] # remove the first element: constructor(0)
+
+    return final_seq
+
+if __name__=="__main__":
+
+    print(get_a_topological_sequence(3,[[3,2],[3,5]]))

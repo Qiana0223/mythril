@@ -73,8 +73,10 @@ class SequenceAndState():
         if key in self.worldState_dict.keys():
             return True
         else:return False
-    def get_state(self,key)->WorldState:
-        return self.worldState_dict[key]
+    def get_state(self,key)->[WorldState]:
+        if key in self.worldState_dict.keys():
+            return self.worldState_dict[key]
+        else:return []
 
 
 
